@@ -1730,50 +1730,71 @@ const levelDescs = {
   C2: 'Du kannst praktisch alles, was du hörst oder liest, mühelos verstehen. Dein Ausdruck ist sehr präzise, nuanciert und fließend.'
 };
 
-async function fetchTestLevel(level, hint) {
-  const seed = Math.floor(Math.random() * 99999);
-  const prompt = `Create 5 English multiple-choice questions for CEFR ${level} level (${hint}). seed:${seed}
-Return ONLY a valid JSON array, nothing else:
-[{"question":"She ___ to work every day.","options":["go","goes","going","gone"],"correct":1,"explanation":"Third person singular needs -s."}]`;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      if (attempt > 0) await new Promise(r => setTimeout(r, 2500));
-      const raw = await callAI([{ role: 'user', content: prompt }], 900);
-      const qs = JSON.parse(extractJSON(raw, 'array'));
-      if (qs.length >= 3) return qs.map(q => ({ ...q, level }));
-    } catch (_) {}
+const TEST_BANK = {
+  B1: [
+    { question:"She ___ to work every day by bus.", options:["go","goes","going","gone"], correct:1, explanation:"With she/he/it in present simple we add -s: goes." },
+    { question:"I ___ my keys. Have you seen them?", options:["lose","lost","have lost","was losing"], correct:2, explanation:"Present perfect for a past action with a present result." },
+    { question:"They ___ in London since 2018.", options:["live","lived","are living","have lived"], correct:3, explanation:"'Since' requires present perfect: have lived." },
+    { question:"If it rains tomorrow, we ___ stay inside.", options:["will","would","shall","can"], correct:0, explanation:"First conditional: If + present simple, will + infinitive." },
+    { question:"He is ___ than his brother.", options:["tall","tallest","more tall","taller"], correct:3, explanation:"Comparative of short adjectives: add -er." },
+    { question:"I don't have ___ money left.", options:["some","any","no","much"], correct:1, explanation:"In negative sentences we use 'any', not 'some'." },
+    { question:"She asked me where I ___ from.", options:["come","came","am coming","have come"], correct:1, explanation:"Reported speech shifts present simple to past simple." },
+    { question:"The film ___ two hours ago.", options:["starts","started","has started","is starting"], correct:1, explanation:"'Ago' signals past simple tense." },
+    { question:"You should ___ more water every day.", options:["drink","to drink","drinking","drank"], correct:0, explanation:"Modal verbs (should) are followed by bare infinitive." },
+    { question:"___ the weather was bad, we enjoyed the trip.", options:["Although","Because","So","Since"], correct:0, explanation:"'Although' introduces a contrast clause." }
+  ],
+  B2: [
+    { question:"By the time she arrived, the meeting ___.", options:["ended","has ended","had ended","was ending"], correct:2, explanation:"Past perfect shows one past action completed before another." },
+    { question:"The bridge ___ in 1890.", options:["built","was built","has been built","were built"], correct:1, explanation:"Passive voice: was/were + past participle." },
+    { question:"I'd rather you ___ tell him yet.", options:["don't","didn't","won't","hadn't"], correct:1, explanation:"'Would rather' + subject takes past subjunctive (didn't)." },
+    { question:"She's used to ___ early every morning.", options:["get up","gets up","getting up","got up"], correct:2, explanation:"'Be used to' is followed by a gerund (-ing form)." },
+    { question:"He gave up ___ after 20 years.", options:["smoke","to smoke","smokes","smoking"], correct:3, explanation:"'Give up' is followed by a gerund (-ing form)." },
+    { question:"___ she studied hard, she failed the exam.", options:["Despite","Even though","However","In spite"], correct:1, explanation:"'Even though' + clause. 'Despite/In spite of' + noun/gerund." },
+    { question:"The company's profits have risen ___ 30% this year.", options:["with","of","by","to"], correct:2, explanation:"A rise 'by' an amount describes the degree of increase." },
+    { question:"No sooner ___ than it started raining.", options:["we left","we had left","had we left","did we leave"], correct:2, explanation:"Inversion after 'no sooner': had + subject + past participle." },
+    { question:"It's high time we ___ a decision.", options:["make","made","have made","will make"], correct:1, explanation:"'It's high time' + past subjunctive (made)." },
+    { question:"She ___ be angry — she's smiling.", options:["can't","mustn't","wouldn't","shouldn't"], correct:0, explanation:"Can't = deduction/impossibility in the present." }
+  ],
+  C1: [
+    { question:"The accused was acquitted ___ all charges.", options:["from","of","for","on"], correct:1, explanation:"'Acquitted of' is the correct collocation in legal English." },
+    { question:"Hardly ___ sat down when the phone rang.", options:["I had","had I","I have","have I"], correct:1, explanation:"Inversion after negative adverb 'hardly': had + subject." },
+    { question:"The report ___ further investigation into the matter.", options:["calls for","calls on","calls off","calls up"], correct:0, explanation:"'Call for' means to require or demand something." },
+    { question:"His behaviour was ___ to say the least.", options:["questionable","questioned","questioning","questionnaire"], correct:0, explanation:"'Questionable' (adjective) = doubtful, suspect." },
+    { question:"The news came as a bolt ___ the blue.", options:["from","out of","through","across"], correct:1, explanation:"'A bolt out of the blue' = something completely unexpected." },
+    { question:"She is known to have a ___ tongue — always very direct.", options:["sharp","blunt","rough","keen"], correct:1, explanation:"'Blunt' tongue = speaking in a direct, sometimes rude way." },
+    { question:"The proposal was met with ___ silence.", options:["deafening","loud","resounding","blaring"], correct:0, explanation:"'Deafening silence' is a fixed paradoxical expression (C1 idiom)." },
+    { question:"The new law ___ effect next January.", options:["takes","comes into","brings","enters"], correct:1, explanation:"'Come into effect' = to start being applied/enforced." },
+    { question:"He was ___ to accept the offer after much deliberation.", options:["persuaded","convinced","talked into","induced"], correct:2, explanation:"'Talk someone into doing sth' = persuade informally." },
+    { question:"The issue ___ on whether funding will be approved.", options:["hinges","relies","rests","leans"], correct:0, explanation:"'Hinge on' = to depend entirely on one critical factor." }
+  ],
+  C2: [
+    { question:"The politician's speech was ___ with contradictions.", options:["replete","abundant","filled","crowded"], correct:0, explanation:"'Replete with' (formal) = full of, abundantly supplied with." },
+    { question:"Her ___ remarks offended several colleagues.", options:["acerbic","acidic","bitter","cutting"], correct:0, explanation:"'Acerbic' is the most precise C2 word for sharply critical/harsh." },
+    { question:"The distinction between 'may' and 'might' in formal writing ___.", options:["is a matter of style only","affects degree of probability","has become obsolete","is purely regional"], correct:1, explanation:"'May' implies higher probability; 'might' suggests more doubt." },
+    { question:"He was ___ in his refusal to compromise.", options:["intransigent","stubborn","firm","resolute"], correct:0, explanation:"'Intransigent' (C2) = refusing to change one's position, formal register." },
+    { question:"The policy had far-___ consequences for the economy.", options:["reaching","ranging","going","stretching"], correct:0, explanation:"'Far-reaching' is the fixed collocation meaning widespread impact." },
+    { question:"The author's prose is known for its ___.", options:["lucidity","lucidness","clearness","transparency"], correct:0, explanation:"'Lucidity' is the most precise formal noun for absolute clarity of expression." },
+    { question:"'To brook no opposition' means ___.", options:["to tolerate no disagreement","to encourage debate","to ignore criticism","to delay a decision"], correct:0, explanation:"'Brook' (C2 verb) = to tolerate. 'Brook no opposition' = allow none." },
+    { question:"Which word best completes: 'The scandal led to the ___ of the minister'?", options:["downfall","collapse","defeat","ruin"], correct:0, explanation:"'Downfall' specifically refers to loss of power/status due to a failure." },
+    { question:"'She has a ___ for detail' means she notices everything.", options:["penchant","eye","knack","flair"], correct:1, explanation:"'An eye for detail' is the fixed idiom; the others don't collocate here." },
+    { question:"The concept ___ to more than just linguistic competence.", options:["pertains","refers","relates","concerns"], correct:0, explanation:"'Pertain to' (formal/C2) = be appropriate or relevant to, often in academic writing." }
+  ]
+};
+
+function fetchTestLevel(level) {
+  const bank = [...TEST_BANK[level]];
+  for (let i = bank.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [bank[i], bank[j]] = [bank[j], bank[i]];
   }
-  throw new Error(`Fragen für ${level} konnten nicht geladen werden`);
+  return bank.slice(0, 5).map(q => ({ ...q, level }));
 }
 
-async function startPlacementTest() {
-  document.getElementById('testIntro').style.display = 'none';
-  document.getElementById('testLoadingCard').style.display = 'flex';
+function startPlacementTest() {
   testQuestions = [];
   testIdx = 0;
   testScores = { B1: 0, B2: 0, C1: 0, C2: 0 };
-
-  const levelDefs = [
-    { level: 'B1', hint: 'basic grammar and everyday vocabulary' },
-    { level: 'B2', hint: 'intermediate grammar, idioms and collocations' },
-    { level: 'C1', hint: 'advanced grammar, formal register and nuanced vocabulary' },
-    { level: 'C2', hint: 'near-native subtle word distinctions and sophisticated idioms' }
-  ];
-
-  try {
-    const all = [];
-    for (const { level, hint } of levelDefs) {
-      const qs = await fetchTestLevel(level, hint);
-      all.push(...qs);
-    }
-    testQuestions = all;
-  } catch (e) {
-    document.getElementById('testLoadingCard').style.display = 'none';
-    document.getElementById('testIntro').style.display = 'flex';
-    alert('Fehler: ' + e.message);
-    return;
-  }
-
+  testQuestions = ['B1','B2','C1','C2'].flatMap(lvl => fetchTestLevel(lvl));
   document.getElementById('testLoadingCard').style.display = 'none';
   showTestQuestion();
 }

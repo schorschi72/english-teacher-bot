@@ -1737,35 +1737,27 @@ async function startPlacementTest() {
   testIdx = 0;
   testScores = { B1: 0, B2: 0, C1: 0, C2: 0 };
 
-  const prompt = `Create a JSON placement test for English learners with exactly 20 multiple-choice questions (5 per CEFR level: B1, B2, C1, C2). Cover vocabulary, grammar, idioms, and usage. Return ONLY this JSON structure, no markdown:
-{
-  "questions": [
-    {
-      "level": "B1",
-      "question": "She ___ to work every day by bus.",
-      "options": ["go", "goes", "going", "gone"],
-      "answer": 1,
-      "explanation": "'Goes' is correct because with third-person singular (she) in the present simple, we add -s."
-    }
-  ]
-}
-Make questions progressively harder: B1 = everyday grammar/vocab, B2 = complex structures/idioms, C1 = advanced usage/nuance, C2 = sophisticated vocabulary/subtle distinctions. Mix topics. answer is the 0-based index of the correct option.`;
+  const levelDefs = [
+    { level: 'B1', hint: 'basic everyday grammar and common vocabulary (present/past tenses, articles, prepositions)' },
+    { level: 'B2', hint: 'intermediate structures (conditionals, passive voice, phrasal verbs, collocations)' },
+    { level: 'C1', hint: 'advanced grammar and nuanced vocabulary (inversion, advanced modals, formal register)' },
+    { level: 'C2', hint: 'near-native subtle distinctions (nuanced word choice, sophisticated idioms, connotation)' }
+  ];
 
   try {
-    const res = await fetch('https://text.pollinations.ai/openai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'openai',
-        messages: [{ role: 'user', content: prompt }],
-        seed: Math.floor(Math.random() * 99999)
-      })
-    });
-    const data = await res.json();
-    const raw = data.choices?.[0]?.message?.content || '';
-    const parsed = JSON.parse(extractJSON(raw, 'object'));
-    if (!parsed?.questions?.length) throw new Error('parse');
-    testQuestions = parsed.questions;
+    const all = [];
+    for (const { level, hint } of levelDefs) {
+      const seed = Math.floor(Math.random() * 99999);
+      const prompt = `Create 5 English multiple-choice questions at CEFR ${level} level (${hint}). seed:${seed}
+Return ONLY a JSON array, no markdown, no extra text:
+[{"question":"She ___ to work every day.","options":["go","goes","going","gone"],"answer":1,"explanation":"Third person singular needs -s."}]
+4 options per question. answer = 0-based index of correct option.`;
+      const raw = await callAI([{ role: 'user', content: prompt }], 900);
+      const qs = JSON.parse(extractJSON(raw, 'array'));
+      qs.forEach(q => { q.level = level; all.push(q); });
+    }
+    if (all.length < 8) throw new Error('too few questions');
+    testQuestions = all;
   } catch (e) {
     document.getElementById('testLoadingCard').style.display = 'none';
     document.getElementById('testIntro').style.display = 'flex';

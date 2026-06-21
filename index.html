@@ -61,10 +61,10 @@
   .footer-label { text-align: center; font-size: 11px; color: var(--text-muted); padding: 4px 0 0; }
   .nav-row { display: flex; }
   .nav-btn {
-    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-    cursor: pointer; padding: 10px 0; border: none; background: none;
-    color: var(--text-muted); font-size: 11px; transition: color 0.15s;
-    min-height: 56px; /* großes Touch-Target */
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    cursor: pointer; padding: 8px 0; border: none; background: none;
+    color: var(--text-muted); font-size: 10px; transition: color 0.15s;
+    min-height: 52px;
     user-select: none;
   }
   .nav-btn.active { color: var(--primary-light); }
@@ -263,6 +263,38 @@
   }
   .interest-chip.on { background: #1e1b4b; border-color: var(--primary-light); color: var(--primary-light); }
   .interest-chip .del { font-size: 14px; color: var(--danger); margin-left: 2px; }
+  /* Skills tab */
+  .skills-mode-btn {
+    flex: 1; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 700;
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .skills-mode-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+  .write-area {
+    width: 100%; min-height: 140px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; color: var(--text); font-size: 15px;
+    font-family: inherit; resize: vertical; line-height: 1.6;
+  }
+  .write-area:focus { outline: none; border-color: var(--primary-light); }
+  .error-mark { background: #450A0A55; border-bottom: 2px solid var(--danger); border-radius: 3px; }
+  .correction-item { background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+  .correction-wrong { color: #FCA5A5; font-weight: 700; text-decoration: line-through; }
+  .correction-right { color: #34D399; font-weight: 700; }
+  /* Dictation */
+  .dictation-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px; color:var(--text); font-size:16px; font-family:inherit; }
+  .dictation-input:focus { outline:none; border-color:var(--primary-light); }
+  /* Word tiles */
+  .word-tile { display:inline-block; padding:8px 14px; margin:4px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--surface2); color:var(--text); transition:all 0.15s; user-select:none; }
+  .word-tile.used { opacity:0.3; pointer-events:none; }
+  .word-tile.placed { background:var(--primary); border-color:var(--primary); color:white; }
+  .tile-slot { display:inline-block; padding:8px 14px; margin:4px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; min-width:60px; text-align:center; border:1px solid var(--primary-light); background:#1e1b4b44; color:var(--primary-light); }
+  .tile-slot.correct { background:#064E3B55; border-color:var(--accent); color:#34D399; cursor:default; }
+  .tile-slot.wrong { background:#450A0A55; border-color:var(--danger); color:#FCA5A5; cursor:default; }
+  /* Progress */
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stat-card { background:var(--surface2); border-radius:12px; padding:14px; text-align:center; }
+  .stat-card .big { font-size:28px; font-weight:800; color:var(--primary-light); }
+  .stat-card .lbl { font-size:12px; color:var(--text-muted); margin-top:2px; }
   /* Placement Test */
   .level-badge {
     display: inline-block; font-size: 36px; font-weight: 900; letter-spacing: 2px;
@@ -284,6 +316,20 @@
   .level-bar-wrap { flex: 1; background: var(--surface2); border-radius: 99px; height: 8px; overflow: hidden; }
   .level-bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; background: var(--primary-light); }
   .level-bar-fill.pass { background: var(--accent); }
+  /* Word of Day */
+  .wotd-card { background: linear-gradient(135deg, #1e1b4b, #312e81); border: 1px solid #4F46E5; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .wotd-word { font-size: 24px; font-weight: 900; color: var(--primary-light); }
+  /* Due badge */
+  .due-badge { background: #7C3AED; color: white; border-radius: 99px; font-size: 10px; font-weight: 700; padding: 2px 7px; margin-left: 6px; }
+  /* Daily goal */
+  .goal-bar { background: var(--surface2); border-radius: 99px; height: 10px; overflow: hidden; margin-top: 4px; }
+  .goal-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--primary), var(--primary-light)); transition: width 0.5s ease; }
+  /* Reading */
+  .read-text { font-size: 15px; line-height: 1.9; background: var(--surface2); border-radius: 10px; padding: 16px; }
+  /* Roleplay */
+  .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .scenario-btn { padding: 14px 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; line-height: 1.4; transition: all 0.15s; }
+  .scenario-btn:hover { border-color: var(--primary-light); background: #1e1b4b; }
 </style>
 </head>
 <body>
@@ -297,11 +343,25 @@
 
   <!-- CHAT -->
   <div class="tab-content active" id="tab-chat">
+    <div id="wotdCard" class="wotd-card" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:#818CF8;letter-spacing:1px">WORT DES TAGES</div>
+      <div class="wotd-word" id="wotdWord"></div>
+      <div style="font-size:13px;color:#C7D2FE" id="wotdTranslation"></div>
+      <div style="font-size:13px;color:#A5B4FC;font-style:italic" id="wotdExample"></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="listen-btn" style="font-size:12px;padding:5px 12px" onclick="speak(document.getElementById('wotdWord').textContent)">🔊 Listen</button>
+        <button class="listen-btn slow" style="font-size:12px;padding:5px 12px" onclick="addWotdToVocab()">+ Vocab</button>
+      </div>
+    </div>
     <div class="chip-row">
       <div class="chip active" data-mode="freeChat" onclick="setMode(this)">💬 Free Talk</div>
-      <div class="chip" data-mode="corrections" onclick="setMode(this)">✏️ Corrections</div>
+      <div class="chip" data-mode="corrections" onclick="setMode(this)">✏️ Correct me</div>
       <div class="chip" data-mode="formal" onclick="setMode(this)">👔 Formal</div>
       <div class="chip" data-mode="interview" onclick="setMode(this)">🎤 Interview</div>
+      <div class="chip" data-mode="restaurant" onclick="setMode(this)">🍽️ Restaurant</div>
+      <div class="chip" data-mode="hotel" onclick="setMode(this)">🏨 Hotel</div>
+      <div class="chip" data-mode="doctor" onclick="setMode(this)">🏥 Doctor</div>
+      <div class="chip" data-mode="shopping" onclick="setMode(this)">🛍️ Shopping</div>
     </div>
     <div id="chat-messages">
       <div class="msg-wrap bot-wrap">
@@ -319,6 +379,13 @@
 
   <!-- VOCAB -->
   <div class="tab-content" id="tab-vocab">
+    <div style="display:flex;gap:8px">
+      <button class="grammar-mode-btn active" id="vocabFlashBtn" onclick="switchVocabMode('flash')">🃏 Flashcards</button>
+      <button class="grammar-mode-btn" id="vocabQuizBtn" onclick="switchVocabMode('quiz')">🧠 Quiz</button>
+    </div>
+
+    <!-- FLASHCARD MODE -->
+    <div id="vocabFlashPanel" style="display:flex;flex-direction:column;gap:12px">
     <div class="vocab-stats">
       <div class="stat-box"><div class="num" id="vocabTotal">0</div><div class="lbl">Total</div></div>
       <div class="stat-box"><div class="num" id="vocabLearned">0</div><div class="lbl">Learned</div></div>
@@ -372,6 +439,47 @@
       <div class="section-title" style="margin-bottom:8px">My Words</div>
       <div class="vocab-list" id="vocabList"></div>
     </div>
+    </div> <!-- end vocabFlashPanel -->
+
+    <!-- VOCAB QUIZ MODE -->
+    <div id="vocabQuizPanel" style="display:none;flex-direction:column;gap:12px">
+
+      <!-- Intro: choose filter -->
+      <div id="vocabQuizIntro" class="card" style="padding:20px;display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center">
+        <div style="font-size:36px">🧠</div>
+        <div class="section-title">Vocabulary Quiz</div>
+        <div style="color:var(--text-muted);font-size:14px">Wähle, welche Wörter du testen möchtest.</div>
+        <button class="btn" style="width:100%" onclick="startVocabQuiz('all')">📚 Alle Wörter testen</button>
+        <button class="btn secondary" style="width:100%" id="vocabQuizLearnedBtn" onclick="startVocabQuiz('learned')">✅ Nur gelernte Wörter</button>
+        <div id="vocabQuizInterestBtns" style="width:100%;display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <!-- Question -->
+      <div id="vocabQuizQuestion" class="card" style="display:none;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;color:var(--text-muted)" id="vocabQuizCounter">1 / 10</span>
+          <span class="badge blue" id="vocabQuizScore">0 correct</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" id="vocabQuizProgress" style="width:0%"></div></div>
+        <div style="text-align:center;font-size:13px;color:var(--text-muted)">What is the English word for:</div>
+        <div id="vocabQuizWord" style="text-align:center;font-size:26px;font-weight:800;color:var(--primary-light)"></div>
+        <div id="vocabQuizExample" style="font-size:13px;color:var(--text-muted);text-align:center;font-style:italic"></div>
+        <div id="vocabQuizOptions"></div>
+        <div id="vocabQuizExplanation" class="explanation" style="display:none"></div>
+        <button class="btn" id="vocabQuizNextBtn" style="display:none" onclick="vocabQuizNext()">Weiter →</button>
+      </div>
+
+      <!-- Result -->
+      <div id="vocabQuizResult" class="card" style="display:none;flex-direction:column;gap:14px;align-items:center;padding:24px;text-align:center">
+        <div style="font-size:40px" id="vocabQuizResultIcon">🎉</div>
+        <div style="font-size:24px;font-weight:800" id="vocabQuizResultScore"></div>
+        <div style="font-size:14px;color:var(--text-muted)" id="vocabQuizResultDetail"></div>
+        <div id="vocabQuizMistakes" style="width:100%;text-align:left"></div>
+        <button class="btn" onclick="startVocabQuiz(lastVocabQuizFilter)">🔄 Nochmals</button>
+        <button class="btn secondary" onclick="resetVocabQuiz()">← Zurück</button>
+      </div>
+
+    </div>
   </div>
 
   <!-- GRAMMAR -->
@@ -379,7 +487,8 @@
     <!-- Mode switcher -->
     <div style="display:flex;gap:8px">
       <button class="grammar-mode-btn active" id="modeQuizBtn" onclick="switchGrammarMode('quiz')">📚 Quiz</button>
-      <button class="grammar-mode-btn" id="modeFillBtn" onclick="switchGrammarMode('fill')">📄 Fill-in Text</button>
+      <button class="grammar-mode-btn" id="modeFillBtn" onclick="switchGrammarMode('fill')">📄 Fill-in</button>
+      <button class="grammar-mode-btn" id="modeBuildBtn" onclick="switchGrammarMode('build')">🧩 Satz</button>
     </div>
 
     <!-- QUIZ mode -->
@@ -410,7 +519,265 @@
         </div>
       </div>
     </div>
+
+    <!-- SENTENCE BUILDER mode -->
+    <div id="grammarBuildPanel" style="display:none;flex-direction:column;gap:12px">
+      <div class="card" id="buildIntro" style="padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
+        <div style="font-size:36px">🧩</div>
+        <div class="section-title">Sentence Builder</div>
+        <div style="color:var(--text-muted);font-size:14px">Bringe die Wörter in die richtige Reihenfolge um den Satz zu bilden.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startBuild('B1')">B1</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startBuild('B2')">B2</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startBuild('C1')">C1</button>
+        </div>
+      </div>
+      <div class="card" id="buildLoadingCard" style="display:none;text-align:center;padding:24px;flex-direction:column;gap:10px;align-items:center">
+        <div class="spinner" style="width:32px;height:32px;border-width:4px"></div>
+        <div style="font-size:14px;color:var(--text-muted)">Satz wird generiert…</div>
+      </div>
+      <div class="card" id="buildCard" style="display:none;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:13px;color:var(--text-muted)" id="buildLevelBadge">B1</div>
+          <span class="badge blue" id="buildScore">0 / 0</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted)">💡 German: <span id="buildGerman" style="color:var(--text);font-weight:600"></span></div>
+        <div id="buildSlots" style="min-height:48px;background:var(--surface2);border-radius:10px;padding:10px;display:flex;flex-wrap:wrap;gap:4px;align-items:center"></div>
+        <div id="buildTiles" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="checkBuild()">✓ Check</button>
+          <button class="btn secondary" onclick="clearBuild()">✗ Clear</button>
+        </div>
+        <div id="buildResult" style="display:none;flex-direction:column;gap:8px">
+          <div id="buildResultText" class="explanation"></div>
+          <button class="btn" onclick="startBuild(lastBuildLevel)">🔄 Neuer Satz</button>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- SKILLS: LISTENING + WRITING -->
+  <div class="tab-content" id="tab-skills">
+    <div style="display:flex;gap:8px">
+      <button class="skills-mode-btn active" id="skillsListenBtn" onclick="switchSkillsMode('listen')">👂 Listen</button>
+      <button class="skills-mode-btn" id="skillsWriteBtn" onclick="switchSkillsMode('write')">✍️ Write</button>
+      <button class="skills-mode-btn" id="skillsDictBtn" onclick="switchSkillsMode('dict')">🎧 Diktat</button>
+      <button class="skills-mode-btn" id="skillsReadBtn" onclick="switchSkillsMode('read')">📖 Reading</button>
+    </div>
+
+    <!-- LISTENING -->
+    <div id="skillsListenPanel" style="display:flex;flex-direction:column;gap:12px">
+      <div class="card" id="listenIntro" style="padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
+        <div style="font-size:36px">👂</div>
+        <div class="section-title">Listening Comprehension</div>
+        <div style="color:var(--text-muted);font-size:14px">Höre einen englischen Text und beantworte Verständnisfragen.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center" id="listenTopicChips">
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startListening('daily life')">🏠 Daily Life</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startListening('travel')">✈️ Travel</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startListening('work')">💼 Work</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startListening('culture')">🎭 Culture</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startListening('news')">📰 News</button>
+        </div>
+      </div>
+      <div class="card" id="listenLoadingCard" style="display:none;text-align:center;padding:28px;gap:12px;flex-direction:column;align-items:center">
+        <div class="spinner" style="width:36px;height:36px;border-width:4px"></div>
+        <div style="color:var(--text-muted);font-size:14px">Text wird generiert…</div>
+      </div>
+      <div id="listenTextCard" class="card" style="display:none;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="section-title">Listen carefully</div>
+          <div style="display:flex;gap:6px">
+            <button class="listen-btn" onclick="listenPlayText(1.0)">🔊 Play</button>
+            <button class="listen-btn slow" onclick="listenPlayText(0.7)">🐢 Slow</button>
+          </div>
+        </div>
+        <div id="listenTextDisplay" style="font-size:15px;line-height:1.7;color:var(--text-muted);background:var(--surface2);border-radius:10px;padding:14px;display:none"></div>
+        <button class="btn" id="listenShowTextBtn" onclick="listenToggleText()">👁 Show text</button>
+        <button class="btn" id="listenQuestionsBtn" onclick="listenShowQuestions()" style="display:none">📝 Answer questions</button>
+      </div>
+      <div id="listenQuestionsCard" class="card" style="display:none;flex-direction:column;gap:14px">
+        <div class="section-title">Comprehension Questions</div>
+        <div id="listenQuestions"></div>
+        <button class="btn" id="listenCheckBtn" onclick="listenCheck()" disabled>Check answers</button>
+        <div id="listenResult" style="display:none"></div>
+        <button class="btn secondary" id="listenNewBtn" style="display:none" onclick="listenReset()">🔄 New text</button>
+      </div>
+    </div>
+
+    <!-- WRITING -->
+    <div id="skillsWritePanel" style="display:none;flex-direction:column;gap:12px">
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div class="section-title">✍️ Writing Correction</div>
+        <div style="color:var(--text-muted);font-size:13px">Schreib einen englischen Text — die KI korrigiert jeden Fehler mit Erklärung.</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="writePromptChips">
+          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Describe your typical day.')">My day</button>
+          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Write about a recent trip or holiday.')">Travel</button>
+          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Describe your job or studies.')">Work/Study</button>
+          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Write your opinion on social media.')">Opinion</button>
+        </div>
+        <div id="writePromptHint" style="font-size:13px;color:var(--primary-light);display:none"></div>
+        <textarea class="write-area" id="writeInput" placeholder="Write your text here in English…" oninput="writeInputChanged()"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span id="writeWordCount" style="font-size:12px;color:var(--text-muted)">0 words</span>
+          <button class="btn" id="writeCheckBtn" onclick="checkWriting()" disabled>✓ Correct my text</button>
+        </div>
+      </div>
+      <div class="card" id="writeLoadingCard" style="display:none;text-align:center;padding:24px;flex-direction:column;gap:10px;align-items:center">
+        <div class="spinner" style="width:32px;height:32px;border-width:4px"></div>
+        <div style="font-size:14px;color:var(--text-muted)">Wird korrigiert…</div>
+      </div>
+      <div class="card" id="writeResultCard" style="display:none;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="section-title">Corrections</div>
+          <span class="badge blue" id="writeErrorCount"></span>
+        </div>
+        <div id="writeCorrections"></div>
+        <div class="card" style="background:var(--surface2);padding:14px;gap:8px;display:flex;flex-direction:column">
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted)">CORRECTED VERSION</div>
+          <div id="writeCorrectedText" style="font-size:15px;line-height:1.7"></div>
+          <button class="listen-btn" onclick="speak(document.getElementById('writeCorrectedText').textContent)">🔊 Listen</button>
+        </div>
+        <button class="btn secondary" onclick="writeReset()">✍️ New text</button>
+      </div>
+    </div>
+
+    <!-- DICTATION -->
+    <div id="skillsDictPanel" style="display:none;flex-direction:column;gap:12px">
+      <div class="card" id="dictIntro" style="padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
+        <div style="font-size:36px">🎧</div>
+        <div class="section-title">Diktat</div>
+        <div style="color:var(--text-muted);font-size:14px">Höre den Satz und tippe ihn ab. Auf Großschreibung und Satzzeichen wird nicht geachtet.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('B1')">B1</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('B2')">B2</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('C1')">C1</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('random')">🎲 Zufällig</button>
+        </div>
+      </div>
+      <div class="card" id="dictLoadingCard" style="display:none;text-align:center;padding:24px;flex-direction:column;gap:10px;align-items:center">
+        <div class="spinner" style="width:32px;height:32px;border-width:4px"></div>
+        <div style="font-size:14px;color:var(--text-muted)">Satz wird generiert…</div>
+      </div>
+      <div class="card" id="dictCard" style="display:none;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button class="listen-btn" onclick="dictPlay(1.0)">🔊 Play</button>
+          <button class="listen-btn slow" onclick="dictPlay(0.65)">🐢 Slow</button>
+          <button class="listen-btn slow" onclick="dictPlay(0.5)">🐌 Very slow</button>
+        </div>
+        <input class="dictation-input" id="dictInput" placeholder="Type what you hear…" oninput="dictInputChanged()" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+        <button class="btn" id="dictCheckBtn" onclick="checkDictation()" disabled>✓ Check</button>
+        <div id="dictResult" style="display:none;flex-direction:column;gap:10px">
+          <div id="dictResultText" style="font-size:15px;line-height:1.8"></div>
+          <div id="dictExplanation" class="explanation" style="display:none"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="startDictation(lastDictLevel)">🔄 Neuer Satz</button>
+            <button class="btn secondary" onclick="dictIntroReset()">← Zurück</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- READING -->
+    <div id="skillsReadPanel" style="display:none;flex-direction:column;gap:12px">
+      <div class="card" id="readIntro" style="padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
+        <div style="font-size:36px">📖</div>
+        <div class="section-title">Reading Comprehension</div>
+        <div style="color:var(--text-muted);font-size:14px">Lies einen Text und beantworte Verständnisfragen.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startReading('B1','daily life')">B1 · Alltag</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startReading('B2','travel & culture')">B2 · Reise</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startReading('C1','society & opinion')">C1 · Gesellschaft</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startReading('C2','literature & nuance')">C2 · Literatur</button>
+        </div>
+      </div>
+      <div class="card" id="readLoadingCard" style="display:none;text-align:center;padding:28px;flex-direction:column;gap:10px;align-items:center">
+        <div class="spinner" style="width:36px;height:36px;border-width:4px"></div>
+        <div style="font-size:14px;color:var(--text-muted)">Text wird generiert…</div>
+      </div>
+      <div class="card" id="readTextCard" style="display:none;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="badge blue" id="readLevelBadge">B1</span>
+          <button class="listen-btn" style="font-size:12px;padding:5px 12px" onclick="speak(currentReadText,0.9)">🔊 Read aloud</button>
+        </div>
+        <div class="read-text" id="readText"></div>
+        <button class="btn" onclick="readShowQuestions()">📝 Answer questions</button>
+      </div>
+      <div class="card" id="readQuestionsCard" style="display:none;flex-direction:column;gap:14px">
+        <div class="section-title">Comprehension Questions</div>
+        <div id="readQuestions"></div>
+        <button class="btn" id="readCheckBtn" onclick="readCheck()" disabled>Check answers</button>
+        <div id="readResult" style="display:none"></div>
+        <button class="btn secondary" id="readNewBtn" style="display:none" onclick="readReset()">🔄 New text</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS DASHBOARD -->
+  <div class="tab-content" id="tab-progress">
+    <div class="section-title">📊 Mein Fortschritt</div>
+    <div class="card" style="padding:14px;gap:8px;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px;font-weight:700">🎯 Tagesziel: <span id="pgGoalDone">0</span> / <span id="pgGoalTarget">10</span> Wörter</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer" onclick="changeGoal(-5)">−5</button>
+          <button style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer" onclick="changeGoal(5)">+5</button>
+        </div>
+      </div>
+      <div class="goal-bar"><div class="goal-bar-fill" id="pgGoalBar" style="width:0%"></div></div>
+      <div id="pgGoalMsg" style="font-size:12px;color:var(--text-muted)"></div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="big" id="pgTotal">0</div><div class="lbl">Vokabeln</div></div>
+      <div class="stat-card"><div class="big" id="pgLearned">0</div><div class="lbl">Gelernt</div></div>
+      <div class="stat-card"><div class="big" id="pgStreak">0</div><div class="lbl">Streak 🔥</div></div>
+      <div class="stat-card"><div class="big" id="pgDays">0</div><div class="lbl">Lerntage</div></div>
+    </div>
+    <div class="card" style="padding:16px;gap:10px;display:flex;flex-direction:column">
+      <div class="section-title" style="font-size:14px">Vokabeln nach Status</div>
+      <div class="level-bar-row">
+        <span class="level-bar-label" style="width:60px;font-size:11px">Gelernt</span>
+        <div class="level-bar-wrap"><div class="level-bar-fill pass" id="pgBarLearned" style="width:0%"></div></div>
+        <span id="pgBarLearnedN" style="font-size:12px;color:var(--text-muted);width:30px;text-align:right">0</span>
+      </div>
+      <div class="level-bar-row">
+        <span class="level-bar-label" style="width:60px;font-size:11px">In Übung</span>
+        <div class="level-bar-wrap"><div class="level-bar-fill" id="pgBarProg" style="width:0%"></div></div>
+        <span id="pgBarProgN" style="font-size:12px;color:var(--text-muted);width:30px;text-align:right">0</span>
+      </div>
+      <div class="level-bar-row">
+        <span class="level-bar-label" style="width:60px;font-size:11px">Neu</span>
+        <div class="level-bar-wrap"><div class="level-bar-fill" style="background:#6B7280" id="pgBarNew" style="width:0%"></div></div>
+        <span id="pgBarNewN" style="font-size:12px;color:var(--text-muted);width:30px;text-align:right">0</span>
+      </div>
+    </div>
+    <div class="card" style="padding:16px;gap:10px;display:flex;flex-direction:column">
+      <div class="section-title" style="font-size:14px">Nächste zu lernende Wörter</div>
+      <div id="pgDueWords" style="font-size:14px;color:var(--text-muted)">Noch keine Vokabeln vorhanden.</div>
+    </div>
+    <div class="card" style="padding:16px;gap:8px;display:flex;flex-direction:column">
+      <div class="section-title" style="font-size:14px">Grammar — Tipps</div>
+      <div id="pgGrammarTip" style="font-size:14px;color:var(--text-muted);line-height:1.6"></div>
+    </div>
+    <div class="card" style="padding:16px;gap:12px;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="section-title" style="font-size:14px">🎯 Meine Schwächen</div>
+        <span class="badge blue" id="pgWeaknessCount"></span>
+      </div>
+      <div id="pgWeaknesses" style="font-size:14px;color:var(--text-muted)">Noch zu wenig Daten — mach einige Quizze!</div>
+      <button class="btn" id="pgTrainBtn" style="display:none" onclick="startWeaknessTraining()">🎯 Schwachstellen trainieren</button>
+      <div class="card" id="pgAdaptiveCard" style="display:none;background:var(--surface2);padding:12px;gap:10px;flex-direction:column">
+        <div id="pgAdaptiveText" style="font-size:14px;line-height:1.6"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="pgAdaptiveBtns"></div>
+      </div>
+      <div id="pgAdaptiveLoading" style="display:none;text-align:center;padding:12px;flex-direction:column;gap:8px;align-items:center">
+        <div class="spinner" style="width:28px;height:28px;border-width:3px"></div>
+        <div style="font-size:13px;color:var(--text-muted)">KI analysiert deine Schwächen…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SENTENCE BUILDER (modal-style overlay panel inside Grammar tab) -->
 
   <!-- PLACEMENT TEST -->
   <div class="tab-content" id="tab-test">
@@ -492,7 +859,9 @@
     <button class="nav-btn" onclick="switchTab('vocab', this)"><span class="icon">📖</span>Vocab</button>
     <button class="nav-btn" onclick="switchTab('grammar', this)"><span class="icon">✏️</span>Grammar</button>
     <button class="nav-btn" onclick="switchTab('pronunciation', this)"><span class="icon">🎤</span>Speak</button>
+    <button class="nav-btn" onclick="switchTab('skills', this)"><span class="icon">📚</span>Skills</button>
     <button class="nav-btn" onclick="switchTab('test', this)"><span class="icon">🎓</span>Test</button>
+    <button class="nav-btn" onclick="switchTab('progress', this);renderProgress()"><span class="icon">📊</span>Stats</button>
   </div>
 </nav>
 
@@ -502,6 +871,8 @@ let chatMode = 'freeChat';
 let chatHistory = [];
 let vocab = JSON.parse(localStorage.getItem('vocab') || '[]');
 let vocabStreak = parseInt(localStorage.getItem('vocabStreak') || '0');
+let grammarStats = JSON.parse(localStorage.getItem('grammarStats') || '{}');
+function saveGrammarStats() { localStorage.setItem('grammarStats', JSON.stringify(grammarStats)); }
 let currentCardIdx = 0;
 let cardFlipped = false;
 let grammarQuestions = [];
@@ -573,6 +944,7 @@ const pronSentences = [
 let currentPronSentence = '';
 
 initTTS();
+loadWordOfDay();
 renderVocabStats();
 initSpeechRecognition();
 newPronSentence();
@@ -708,7 +1080,39 @@ RULES:
 - Ask one interview question at a time — never more than one.
 - After the student answers, give brief feedback on their English (vocabulary, grammar, clarity) in 1 sentence.
 - Then ask the next interview question.
-- Begin with: "Welcome! Could you please start by telling me a little about yourself?"`
+- Begin with: "Welcome! Could you please start by telling me a little about yourself?"`,
+
+  restaurant: `You are a waiter in an English-speaking restaurant. The student is a customer.
+RULES:
+- Stay in character as a waiter at all times.
+- Respond only in English.
+- React naturally to what the customer says (take orders, suggest dishes, handle complaints, bring the bill).
+- If the customer makes an English mistake, add at the end: "💡 [corrected version]"
+- Begin with: "Good evening! Welcome to The Golden Fork. Here is your menu. Can I get you something to drink to start?"`,
+
+  hotel: `You are a hotel receptionist in an English-speaking country. The student is a guest checking in.
+RULES:
+- Stay in character as a receptionist at all times.
+- Respond only in English.
+- Handle check-in, room queries, complaints, recommendations naturally.
+- If the guest makes an English mistake, add at the end: "💡 [corrected version]"
+- Begin with: "Good afternoon! Welcome to the Grand Hotel. Do you have a reservation?"`,
+
+  doctor: `You are a doctor in an English-speaking country. The student is a patient.
+RULES:
+- Stay in character as a doctor at all times.
+- Respond only in English.
+- Ask about symptoms, give advice, handle the consultation naturally.
+- If the patient makes an English mistake, add at the end: "💡 [corrected version]"
+- Begin with: "Good morning! Please have a seat. What seems to be the problem today?"`,
+
+  shopping: `You are a shop assistant in an English-speaking clothing store. The student is a customer.
+RULES:
+- Stay in character as a shop assistant at all times.
+- Respond only in English.
+- Help the customer find items, suggest sizes, handle payment naturally.
+- If the customer makes an English mistake, add at the end: "💡 [corrected version]"
+- Begin with: "Hi there! Welcome to StyleHub. Can I help you find something today?"`
 };
 
 function setMode(chip) {
@@ -720,9 +1124,14 @@ function setMode(chip) {
     freeChat: "Hi! I'm your English conversation partner. What would you like to talk about? 😊",
     corrections: "Hello! Write something in English and I'll gently correct any mistakes. ✏️",
     formal: "Good day. I will assist you in practising formal and business English. Shall we begin? 👔",
-    interview: "Welcome! Could you please start by telling me a little about yourself? 🎤"
+    interview: "Welcome! Could you please start by telling me a little about yourself? 🎤",
+    restaurant: "Good evening! Welcome to The Golden Fork. My name is James and I'll be your server tonight. Can I start you off with something to drink?",
+    hotel: "Good afternoon! Welcome to the Grand Hotel. Do you have a reservation?",
+    doctor: "Good morning! Please have a seat. What seems to be the problem today?",
+    shopping: "Hi there! Welcome to StyleHub. Can I help you find something today?"
   };
-  const g = greetings[chatMode];
+  const g = greetings[chatMode] || greetings.freeChat;
+  chatHistory = [{ role: 'assistant', content: g }];
   document.getElementById('chat-messages').innerHTML = `
     <div class="msg-wrap bot-wrap">
       <div class="msg bot">${escHtml(g)}</div>
@@ -951,7 +1360,10 @@ function showNextCard() {
     voiceArea.style.display = 'none';
     return;
   }
-  currentCardIdx = vocab.indexOf(notLearned[Math.floor(Math.random() * notLearned.length)]);
+  const today = new Date().toDateString();
+  const due = notLearned.filter(v => !v.dueDate || new Date(v.dueDate) <= new Date(today));
+  const pool = due.length > 0 ? due : notLearned;
+  currentCardIdx = vocab.indexOf(pool[Math.floor(Math.random() * pool.length)]);
   card.innerHTML = `<div class="front-word">${escHtml(vocab[currentCardIdx].word)}</div><div class="tap-hint">Tap to reveal — or speak below</div>`;
   cardFlipped = false;
   actions.style.display = 'none';
@@ -977,14 +1389,8 @@ function flipCard() {
 function markCard(easy) {
   stopVocabMic();
   const v = vocab[currentCardIdx];
-  if (easy) {
-    v.correct = (v.correct || 0) + 1;
-    vocabStreak++;
-    if (v.correct >= 3) v.learned = true;
-  } else {
-    v.correct = 0;
-    vocabStreak = 0;
-  }
+  sm2Update(v, easy);
+  if (easy) vocabStreak++; else vocabStreak = 0;
   localStorage.setItem('vocab', JSON.stringify(vocab));
   localStorage.setItem('vocabStreak', vocabStreak);
   renderVocabStats();
@@ -995,9 +1401,10 @@ function updateEasyBtn() {
   const btn = document.querySelector('#vocabActions .btn.success');
   if (!btn || !v) return;
   const c = v.correct || 0;
+  const days = v.interval ? ` · in ${v.interval}d` : '';
   if (c === 0) { btn.textContent = '✓ Correct'; btn.style.background = ''; return; }
   const colors = ['', '#0369a1', '#0f766e', '#15803d'];
-  btn.textContent = `✓ Correct (${c}/3)`;
+  btn.textContent = `✓ Correct (${c}/3${days})`;
   btn.style.background = colors[Math.min(c, 3)];
 }
 
@@ -1185,16 +1592,6 @@ function renderTopicGrid(containerId, fillMode = false) {
     </button>`).join('');
 }
 
-function switchGrammarMode(mode) {
-  const quizPanel = document.getElementById('grammarQuizPanel');
-  const fillPanel = document.getElementById('grammarFillPanel');
-  document.getElementById('modeQuizBtn').classList.toggle('active', mode === 'quiz');
-  document.getElementById('modeFillBtn').classList.toggle('active', mode === 'fill');
-  quizPanel.style.display = mode === 'quiz' ? 'flex' : 'none';
-  quizPanel.style.flexDirection = 'column';
-  quizPanel.style.gap = '12px';
-  fillPanel.style.display = mode === 'fill' ? 'flex' : 'none';
-}
 
 function showTopicSelect() {
   document.getElementById('grammarArea').innerHTML = `
@@ -1323,6 +1720,10 @@ function answerGrammar(chosen) {
   buttons[q.correct].classList.add('correct');
   if (chosen !== q.correct) buttons[chosen].classList.add('wrong');
   else grammarCorrect++;
+  if (!grammarStats[grammarTopic]) grammarStats[grammarTopic] = { correct: 0, total: 0 };
+  grammarStats[grammarTopic].total++;
+  if (chosen === q.correct) grammarStats[grammarTopic].correct++;
+  saveGrammarStats();
   const nextLabel = grammarIdx + 1 >= grammarQuestions.length ? 'See Results →' : 'Next →';
   document.querySelector('#grammarArea .card').innerHTML += `
     <div class="explanation">${escHtml(q.explanation)}</div>
@@ -1721,6 +2122,828 @@ function escHtml(str) {
   return String(str)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+// ── VOCAB QUIZ ──
+let vocabQuizWords = [];
+let vocabQuizIdx = 0;
+let vocabQuizCorrect = 0;
+let vocabQuizMistakeList = [];
+let lastVocabQuizFilter = 'all';
+
+function switchVocabMode(mode) {
+  document.getElementById('vocabFlashBtn').classList.toggle('active', mode === 'flash');
+  document.getElementById('vocabQuizBtn').classList.toggle('active', mode === 'quiz');
+  document.getElementById('vocabFlashPanel').style.display = mode === 'flash' ? 'flex' : 'none';
+  document.getElementById('vocabQuizPanel').style.display = mode === 'quiz' ? 'flex' : 'none';
+  if (mode === 'quiz') renderVocabQuizIntro();
+}
+
+function renderVocabQuizIntro() {
+  document.getElementById('vocabQuizIntro').style.display = 'flex';
+  document.getElementById('vocabQuizQuestion').style.display = 'none';
+  document.getElementById('vocabQuizResult').style.display = 'none';
+  const learned = vocab.filter(v => v.learned).length;
+  document.getElementById('vocabQuizLearnedBtn').textContent = `✅ Nur gelernte Wörter (${learned})`;
+  document.getElementById('vocabQuizLearnedBtn').disabled = learned < 4;
+
+  // Interest filter buttons
+  const interestBtns = document.getElementById('vocabQuizInterestBtns');
+  const activeInterests = getActiveInterests();
+  if (activeInterests.length > 0) {
+    interestBtns.innerHTML = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:2px">Nach Thema filtern:</div>' +
+      activeInterests.map(interest => {
+        const count = vocab.filter(v => v.topic === interest || (v.word && interest)).length;
+        return `<button class="btn secondary" style="width:100%;font-size:13px" onclick="startVocabQuiz('${interest}')">🏷 ${interest}</button>`;
+      }).join('');
+  } else {
+    interestBtns.innerHTML = '';
+  }
+}
+
+function startVocabQuiz(filter) {
+  lastVocabQuizFilter = filter;
+  let pool = [...vocab];
+  if (filter === 'learned') pool = vocab.filter(v => v.learned);
+  else if (filter !== 'all') pool = vocab.filter(v => v.topic === filter || v.interests?.includes(filter));
+
+  if (pool.length < 4) {
+    alert('Zu wenige Wörter für einen Quiz. Bitte mindestens 4 Wörter hinzufügen.');
+    return;
+  }
+
+  // Shuffle and take up to 10
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  vocabQuizWords = pool.slice(0, Math.min(10, pool.length));
+  vocabQuizIdx = 0;
+  vocabQuizCorrect = 0;
+  vocabQuizMistakeList = [];
+
+  document.getElementById('vocabQuizIntro').style.display = 'none';
+  showVocabQuizQuestion();
+}
+
+function showVocabQuizQuestion() {
+  const q = vocabQuizWords[vocabQuizIdx];
+  const total = vocabQuizWords.length;
+  document.getElementById('vocabQuizQuestion').style.display = 'flex';
+  document.getElementById('vocabQuizResult').style.display = 'none';
+  document.getElementById('vocabQuizCounter').textContent = `${vocabQuizIdx + 1} / ${total}`;
+  document.getElementById('vocabQuizScore').textContent = `${vocabQuizCorrect} richtig`;
+  document.getElementById('vocabQuizProgress').style.width = `${(vocabQuizIdx / total) * 100}%`;
+  document.getElementById('vocabQuizWord').textContent = q.translation;
+  document.getElementById('vocabQuizExample').textContent = q.example ? `„${q.example}"` : '';
+  document.getElementById('vocabQuizExplanation').style.display = 'none';
+  document.getElementById('vocabQuizNextBtn').style.display = 'none';
+
+  // Build 4 options: correct + 3 distractors
+  const distractors = vocab.filter(v => v.word !== q.word)
+    .sort(() => Math.random() - 0.5).slice(0, 3).map(v => v.word);
+  const options = [q.word, ...distractors].sort(() => Math.random() - 0.5);
+
+  document.getElementById('vocabQuizOptions').innerHTML = options.map(opt =>
+    `<button class="test-opt" onclick="answerVocabQuiz('${opt.replace(/'/g,"\\'")}','${q.word.replace(/'/g,"\\'")}')">
+      ${escHtml(opt)}
+    </button>`).join('');
+
+  if (ttsEnabled) speakDE(q.translation, 1.0);
+}
+
+function answerVocabQuiz(chosen, correct) {
+  const q = vocabQuizWords[vocabQuizIdx];
+  document.querySelectorAll('.test-opt').forEach(b => b.disabled = true);
+  const btns = document.querySelectorAll('.test-opt');
+  btns.forEach(b => {
+    if (b.textContent.trim() === correct) b.classList.add('correct');
+    else if (b.textContent.trim() === chosen && chosen !== correct) b.classList.add('wrong');
+  });
+
+  const isCorrect = chosen === correct;
+  if (isCorrect) {
+    vocabQuizCorrect++;
+  } else {
+    vocabQuizMistakeList.push(q);
+    const vi = vocab.findIndex(v => v.word === q.word);
+    if (vi >= 0) { vocab[vi].mistakes = (vocab[vi].mistakes || 0) + 1; localStorage.setItem('vocab', JSON.stringify(vocab)); }
+  }
+
+  const expDiv = document.getElementById('vocabQuizExplanation');
+  expDiv.textContent = isCorrect
+    ? `✓ Correct! "${correct}" = "${q.translation}"${q.example ? ' — ' + q.example : ''}`
+    : `✗ "${correct}" = "${q.translation}"${q.example ? ' — ' + q.example : ''}`;
+  expDiv.style.display = 'block';
+  document.getElementById('vocabQuizNextBtn').style.display = 'block';
+
+  if (ttsEnabled) speak(correct);
+}
+
+function vocabQuizNext() {
+  vocabQuizIdx++;
+  if (vocabQuizIdx >= vocabQuizWords.length) {
+    showVocabQuizResult();
+  } else {
+    showVocabQuizQuestion();
+  }
+}
+
+function showVocabQuizResult() {
+  document.getElementById('vocabQuizQuestion').style.display = 'none';
+  const total = vocabQuizWords.length;
+  const pct = Math.round(vocabQuizCorrect / total * 100);
+  document.getElementById('vocabQuizResultIcon').textContent = pct === 100 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '👍' : '📚';
+  document.getElementById('vocabQuizResultScore').textContent = `${vocabQuizCorrect} / ${total} — ${pct}%`;
+  document.getElementById('vocabQuizResultDetail').textContent =
+    pct === 100 ? 'Perfekt! Alle Wörter gewusst.' :
+    pct >= 70 ? 'Sehr gut! Weiter üben.' :
+    pct >= 50 ? 'Gut — aber noch etwas Übung nötig.' : 'Weiter üben — du schaffst es!';
+
+  if (vocabQuizMistakeList.length > 0) {
+    document.getElementById('vocabQuizMistakes').innerHTML =
+      `<div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:8px">Nochmals lernen:</div>` +
+      vocabQuizMistakeList.map(v =>
+        `<div style="background:var(--surface2);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:14px">
+          <span style="font-weight:700">${escHtml(v.word)}</span>
+          <span style="color:var(--text-muted)"> = ${escHtml(v.translation)}</span>
+        </div>`).join('');
+  } else {
+    document.getElementById('vocabQuizMistakes').innerHTML = '';
+  }
+  document.getElementById('vocabQuizResult').style.display = 'flex';
+}
+
+function resetVocabQuiz() {
+  renderVocabQuizIntro();
+  document.getElementById('vocabQuizIntro').style.display = 'flex';
+  document.getElementById('vocabQuizQuestion').style.display = 'none';
+  document.getElementById('vocabQuizResult').style.display = 'none';
+}
+
+// ── SKILLS: LISTENING + WRITING ──
+let listenText = '';
+let listenQuestionData = [];
+let listenAnswers = [];
+
+async function startListening(topic) {
+  listenText = '';
+  listenQuestionData = [];
+  listenAnswers = [];
+  document.getElementById('listenIntro').style.display = 'none';
+  document.getElementById('listenLoadingCard').style.display = 'flex';
+  document.getElementById('listenTextCard').style.display = 'none';
+  document.getElementById('listenQuestionsCard').style.display = 'none';
+
+  try {
+    const seed = Math.floor(Math.random() * 99999);
+    const raw = await callAI([{ role: 'user', content:
+      `Write a natural English listening text about "${topic}" (120–150 words, B1–B2 level). Then create 4 multiple-choice comprehension questions with 3 options each.
+Return ONLY valid JSON, no markdown:
+{"text":"The full listening text here...","questions":[{"question":"What did...?","options":["A","B","C"],"correct":0,"explanation":"The text says..."}]}
+seed:${seed}` }], 1000);
+    const data = JSON.parse(extractJSON(raw, 'object'));
+    if (!data.text || !data.questions?.length) throw new Error('Invalid');
+    listenText = data.text;
+    listenQuestionData = data.questions;
+    listenAnswers = new Array(listenQuestionData.length).fill(null);
+
+    document.getElementById('listenLoadingCard').style.display = 'none';
+    document.getElementById('listenTextCard').style.display = 'flex';
+    document.getElementById('listenTextDisplay').textContent = listenText;
+    document.getElementById('listenTextDisplay').style.display = 'none';
+    document.getElementById('listenShowTextBtn').textContent = '👁 Show text';
+    document.getElementById('listenQuestionsBtn').style.display = 'none';
+    speak(listenText, 0.9);
+  } catch(e) {
+    document.getElementById('listenLoadingCard').style.display = 'none';
+    document.getElementById('listenIntro').style.display = 'flex';
+    alert('Fehler: ' + e.message);
+  }
+}
+
+function listenPlayText(rate) { speak(listenText, rate); }
+
+function listenToggleText() {
+  const d = document.getElementById('listenTextDisplay');
+  const btn = document.getElementById('listenShowTextBtn');
+  const hidden = d.style.display === 'none';
+  d.style.display = hidden ? 'block' : 'none';
+  btn.textContent = hidden ? '🙈 Hide text' : '👁 Show text';
+  document.getElementById('listenQuestionsBtn').style.display = 'block';
+}
+
+function listenShowQuestions() {
+  document.getElementById('listenQuestionsBtn').style.display = 'none';
+  const qDiv = document.getElementById('listenQuestions');
+  qDiv.innerHTML = listenQuestionData.map((q, i) => `
+    <div style="margin-bottom:16px">
+      <div style="font-weight:600;margin-bottom:8px;font-size:15px">${i+1}. ${escHtml(q.question)}</div>
+      ${q.options.map((opt, j) => `
+        <button class="test-opt" id="lopt-${i}-${j}" onclick="listenSelectOpt(${i},${j})">${escHtml(opt)}</button>
+      `).join('')}
+    </div>`).join('');
+  document.getElementById('listenQuestionsCard').style.display = 'flex';
+}
+
+function listenSelectOpt(qi, oi) {
+  listenQuestionData[qi].options.forEach((_, j) =>
+    document.getElementById(`lopt-${qi}-${j}`)?.classList.remove('selected'));
+  document.getElementById(`lopt-${qi}-${oi}`).classList.add('selected');
+  listenAnswers[qi] = oi;
+  document.getElementById('listenCheckBtn').disabled = listenAnswers.some(a => a === null);
+}
+
+function listenCheck() {
+  let correct = 0;
+  listenQuestionData.forEach((q, i) => {
+    q.options.forEach((_, j) => {
+      const btn = document.getElementById(`lopt-${i}-${j}`);
+      if (!btn) return;
+      btn.disabled = true; btn.classList.remove('selected');
+      if (j === q.correct) btn.classList.add('correct');
+      else if (j === listenAnswers[i]) btn.classList.add('wrong');
+    });
+    if (listenAnswers[i] === q.correct) correct++;
+  });
+  const pct = Math.round(correct / listenQuestionData.length * 100);
+  const icon = pct === 100 ? '🎉' : pct >= 50 ? '👍' : '📚';
+  document.getElementById('listenResult').innerHTML =
+    `<div style="text-align:center;padding:8px 0">
+      <div style="font-size:32px">${icon}</div>
+      <div style="font-size:20px;font-weight:700">${correct}/${listenQuestionData.length} — ${pct}%</div>
+    </div>`;
+  document.getElementById('listenResult').style.display = 'block';
+  document.getElementById('listenCheckBtn').style.display = 'none';
+  document.getElementById('listenNewBtn').style.display = 'block';
+  if (ttsEnabled) speak(`${correct} out of ${listenQuestionData.length} correct.`);
+}
+
+function listenReset() {
+  document.getElementById('listenTextCard').style.display = 'none';
+  document.getElementById('listenQuestionsCard').style.display = 'none';
+  document.getElementById('listenIntro').style.display = 'flex';
+}
+
+// ── WRITING CORRECTION ──
+function setWritePrompt(prompt) {
+  const hint = document.getElementById('writePromptHint');
+  hint.textContent = '💡 ' + prompt;
+  hint.style.display = 'block';
+  document.getElementById('writeInput').focus();
+}
+
+function writeInputChanged() {
+  const text = document.getElementById('writeInput').value.trim();
+  const words = text ? text.split(/\s+/).length : 0;
+  document.getElementById('writeWordCount').textContent = words + ' words';
+  document.getElementById('writeCheckBtn').disabled = words < 15;
+}
+
+async function checkWriting() {
+  const text = document.getElementById('writeInput').value.trim();
+  document.getElementById('writeCheckBtn').disabled = true;
+  document.getElementById('writeLoadingCard').style.display = 'flex';
+  document.getElementById('writeResultCard').style.display = 'none';
+
+  try {
+    const raw = await callAI([{ role: 'user', content:
+      `You are an English teacher. Correct the following student text. Find ALL grammar, vocabulary and style errors.
+Student text: "${text}"
+Return ONLY valid JSON, no markdown:
+{"errors":[{"wrong":"she go","right":"she goes","explanation":"Third person singular needs -s in present simple."}],"corrected":"The fully corrected text here."}
+If the text is perfect, return {"errors":[],"corrected":"${text}"}` }], 1200);
+    const data = JSON.parse(extractJSON(raw, 'object'));
+
+    document.getElementById('writeLoadingCard').style.display = 'none';
+    document.getElementById('writeResultCard').style.display = 'flex';
+    document.getElementById('writeErrorCount').textContent =
+      data.errors.length === 0 ? '✓ Perfect!' : data.errors.length + ' error' + (data.errors.length > 1 ? 's' : '');
+
+    if (data.errors.length === 0) {
+      document.getElementById('writeCorrections').innerHTML =
+        '<div style="color:var(--accent);font-weight:700;text-align:center;padding:8px">🎉 No errors found — excellent writing!</div>';
+    } else {
+      document.getElementById('writeCorrections').innerHTML = data.errors.map(e => `
+        <div class="correction-item">
+          <span class="correction-wrong">${escHtml(e.wrong)}</span>
+          <span style="color:var(--text-muted)"> → </span>
+          <span class="correction-right">${escHtml(e.right)}</span>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px">${escHtml(e.explanation)}</div>
+        </div>`).join('');
+    }
+    document.getElementById('writeCorrectedText').textContent = data.corrected;
+    if (ttsEnabled) speak(data.corrected);
+  } catch(e) {
+    document.getElementById('writeLoadingCard').style.display = 'none';
+    document.getElementById('writeCheckBtn').disabled = false;
+    alert('Fehler: ' + e.message);
+  }
+}
+
+function writeReset() {
+  document.getElementById('writeInput').value = '';
+  document.getElementById('writeWordCount').textContent = '0 words';
+  document.getElementById('writeCheckBtn').disabled = true;
+  document.getElementById('writeResultCard').style.display = 'none';
+  document.getElementById('writePromptHint').style.display = 'none';
+}
+
+// ── DICTATION ──
+let dictSentence = '';
+let lastDictLevel = 'random';
+
+async function startDictation(level) {
+  lastDictLevel = level;
+  document.getElementById('dictIntro').style.display = 'none';
+  document.getElementById('dictLoadingCard').style.display = 'flex';
+  document.getElementById('dictCard').style.display = 'none';
+  const lvl = level === 'random' ? ['B1','B2','C1'][Math.floor(Math.random()*3)] : level;
+  const seed = Math.floor(Math.random()*99999);
+  try {
+    dictSentence = await callAI([{role:'user',content:
+      `Write ONE natural English sentence at CEFR ${lvl} level for a dictation exercise. seed:${seed}
+Return ONLY the sentence, nothing else. No quotes. 8–16 words.`}], 80);
+    dictSentence = dictSentence.trim().replace(/^["']|["']$/g,'');
+    document.getElementById('dictLoadingCard').style.display = 'none';
+    document.getElementById('dictCard').style.display = 'flex';
+    document.getElementById('dictInput').value = '';
+    document.getElementById('dictCheckBtn').disabled = true;
+    document.getElementById('dictResult').style.display = 'none';
+    speak(dictSentence, 0.85);
+  } catch(e) {
+    document.getElementById('dictLoadingCard').style.display = 'none';
+    document.getElementById('dictIntro').style.display = 'flex';
+    alert('Fehler: ' + e.message);
+  }
+}
+
+function dictPlay(rate) { speak(dictSentence, rate); }
+function dictInputChanged() {
+  document.getElementById('dictCheckBtn').disabled = document.getElementById('dictInput').value.trim().length < 3;
+}
+
+function checkDictation() {
+  const input = document.getElementById('dictInput').value.trim().toLowerCase().replace(/[.,!?;:]/g,'');
+  const correct = dictSentence.toLowerCase().replace(/[.,!?;:]/g,'');
+  const inWords = input.split(/\s+/);
+  const coWords = correct.split(/\s+/);
+  let html = '';
+  let mistakes = 0;
+  coWords.forEach((w, i) => {
+    const given = inWords[i] || '';
+    if (given === w) {
+      html += `<span style="color:#34D399;font-weight:600">${escHtml(dictSentence.split(/\s+/)[i])} </span>`;
+    } else {
+      mistakes++;
+      html += `<span style="color:#FCA5A5;font-weight:600;text-decoration:line-through">${escHtml(given||'_')} </span><span style="color:#34D399;font-weight:600">${escHtml(dictSentence.split(/\s+/)[i])} </span>`;
+    }
+  });
+  const pct = Math.round((1 - mistakes/coWords.length)*100);
+  const icon = mistakes === 0 ? '🎉' : mistakes <= 2 ? '👍' : '📚';
+  document.getElementById('dictResultText').innerHTML =
+    `<div style="text-align:center;margin-bottom:8px"><span style="font-size:24px">${icon}</span> <strong>${pct}%</strong></div>${html}`;
+  document.getElementById('dictResult').style.display = 'flex';
+  document.getElementById('dictCheckBtn').style.display = 'none';
+  if (mistakes === 0 && ttsEnabled) speak('Perfect!');
+  else speak(dictSentence, 0.85);
+}
+
+function dictIntroReset() {
+  document.getElementById('dictCard').style.display = 'none';
+  document.getElementById('dictIntro').style.display = 'flex';
+}
+
+// ── SENTENCE BUILDER ──
+let buildWords = [];
+let buildPlaced = [];
+let buildCorrect = '';
+let buildGermanText = '';
+let lastBuildLevel = 'B1';
+let buildScore = 0;
+let buildTotal = 0;
+
+async function startBuild(level) {
+  lastBuildLevel = level;
+  document.getElementById('buildIntro').style.display = 'none';
+  document.getElementById('buildLoadingCard').style.display = 'flex';
+  document.getElementById('buildCard').style.display = 'none';
+  const seed = Math.floor(Math.random()*99999);
+  try {
+    const raw = await callAI([{role:'user',content:
+      `Create ONE English sentence at CEFR ${level} level for a word-order exercise. seed:${seed}
+Return ONLY valid JSON:
+{"sentence":"She has been working here for three years.","german":"Sie arbeitet hier seit drei Jahren."}`}], 120);
+    const data = JSON.parse(extractJSON(raw,'object'));
+    buildCorrect = data.sentence.trim();
+    buildGermanText = data.german.trim();
+    buildWords = buildCorrect.replace(/[.,!?]/g,'').split(/\s+/).sort(() => Math.random()-0.5);
+    buildPlaced = [];
+    document.getElementById('buildLoadingCard').style.display = 'none';
+    document.getElementById('buildCard').style.display = 'flex';
+    document.getElementById('buildLevelBadge').textContent = level;
+    document.getElementById('buildGerman').textContent = buildGermanText;
+    document.getElementById('buildScore').textContent = `${buildScore} / ${buildTotal}`;
+    document.getElementById('buildResult').style.display = 'none';
+    renderBuildTiles();
+    renderBuildSlots();
+  } catch(e) {
+    document.getElementById('buildLoadingCard').style.display = 'none';
+    document.getElementById('buildIntro').style.display = 'flex';
+    alert('Fehler: ' + e.message);
+  }
+}
+
+function renderBuildTiles() {
+  document.getElementById('buildTiles').innerHTML = buildWords.map((w,i) =>
+    `<span class="word-tile${buildPlaced.includes(i)?' used':''}" onclick="placeTile(${i})">${escHtml(w)}</span>`
+  ).join('');
+}
+
+function renderBuildSlots() {
+  const sl = document.getElementById('buildSlots');
+  if (buildPlaced.length === 0) {
+    sl.innerHTML = '<span style="color:var(--text-muted);font-size:13px">Tap words below to build the sentence…</span>';
+    return;
+  }
+  sl.innerHTML = buildPlaced.map((wi,si) =>
+    `<span class="tile-slot" onclick="removeTile(${si})">${escHtml(buildWords[wi])}</span>`
+  ).join('');
+}
+
+function placeTile(i) {
+  if (buildPlaced.includes(i)) return;
+  buildPlaced.push(i);
+  renderBuildTiles();
+  renderBuildSlots();
+}
+
+function removeTile(si) {
+  buildPlaced.splice(si,1);
+  renderBuildTiles();
+  renderBuildSlots();
+}
+
+function clearBuild() { buildPlaced = []; renderBuildTiles(); renderBuildSlots(); }
+
+function checkBuild() {
+  const attempt = buildPlaced.map(i => buildWords[i]).join(' ');
+  const correct = buildCorrect.replace(/[.,!?]/g,'').trim();
+  const isCorrect = attempt.toLowerCase() === correct.toLowerCase();
+  buildTotal++;
+  if (isCorrect) buildScore++;
+  document.getElementById('buildScore').textContent = `${buildScore} / ${buildTotal}`;
+
+  const slots = document.querySelectorAll('.tile-slot');
+  const correctWords = correct.split(/\s+/);
+  slots.forEach((s,i) => {
+    s.classList.add(buildPlaced[i] !== undefined && buildWords[buildPlaced[i]].toLowerCase() === (correctWords[i]||'').toLowerCase() ? 'correct' : 'wrong');
+  });
+  document.getElementById('buildResultText').innerHTML = isCorrect
+    ? `🎉 Richtig! <em>${escHtml(buildCorrect)}</em>`
+    : `✗ Richtig wäre: <strong>${escHtml(buildCorrect)}</strong>`;
+  document.getElementById('buildResult').style.display = 'flex';
+  if (ttsEnabled) speak(buildCorrect);
+}
+
+function switchGrammarMode(mode) {
+  document.getElementById('modeQuizBtn').classList.toggle('active', mode==='quiz');
+  document.getElementById('modeFillBtn').classList.toggle('active', mode==='fill');
+  document.getElementById('modeBuildBtn').classList.toggle('active', mode==='build');
+  const qp = document.getElementById('grammarQuizPanel');
+  qp.style.display = mode==='quiz' ? 'flex' : 'none';
+  qp.style.flexDirection = 'column'; qp.style.gap = '12px';
+  document.getElementById('grammarFillPanel').style.display = mode==='fill' ? 'flex' : 'none';
+  document.getElementById('grammarBuildPanel').style.display = mode==='build' ? 'flex' : 'none';
+}
+
+// ── WORD OF THE DAY ──
+let wotdData = null;
+async function loadWordOfDay() {
+  const today = new Date().toDateString();
+  const saved = JSON.parse(localStorage.getItem('wotd') || 'null');
+  if (saved && saved.date === today) { wotdData = saved; showWotd(); return; }
+  try {
+    const seed = new Date().toDateString().split(' ').join('');
+    const raw = await callAI([{role:'user',content:
+      `Give me one interesting English vocabulary word suitable for a B2-C1 learner. seed:${seed}
+Return ONLY valid JSON:
+{"word":"perseverance","translation":"Ausdauer","example":"Her perseverance paid off when she finally got the job.","level":"B2"}`}], 120);
+    const data = JSON.parse(extractJSON(raw,'object'));
+    data.date = today;
+    localStorage.setItem('wotd', JSON.stringify(data));
+    wotdData = data;
+    showWotd();
+  } catch(_) {}
+}
+
+function showWotd() {
+  if (!wotdData) return;
+  document.getElementById('wotdWord').textContent = wotdData.word;
+  document.getElementById('wotdTranslation').textContent = '🇩🇪 ' + wotdData.translation;
+  document.getElementById('wotdExample').textContent = '"' + wotdData.example + '"';
+  document.getElementById('wotdCard').style.display = 'flex';
+}
+
+function addWotdToVocab() {
+  if (!wotdData) return;
+  if (vocab.some(v => v.word.toLowerCase() === wotdData.word.toLowerCase())) {
+    alert('Dieses Wort ist bereits in deiner Vokabelliste.'); return;
+  }
+  vocab.push({ word: wotdData.word, translation: wotdData.translation, example: wotdData.example, learned: false, correct: 0 });
+  localStorage.setItem('vocab', JSON.stringify(vocab));
+  renderVocabStats();
+  const btn = document.querySelector('#wotdCard button:last-child');
+  btn.textContent = '✓ Gespeichert'; btn.disabled = true;
+}
+
+// ── SPACED REPETITION (SM-2) ──
+function sm2Update(v, easy) {
+  const quality = easy ? 5 : 1;
+  const ef = Math.max(1.3, (v.ef || 2.5) + 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+  if (quality < 3) {
+    v.reps = 0; v.interval = 1;
+  } else {
+    v.reps = (v.reps || 0) + 1;
+    v.interval = v.reps === 1 ? 1 : v.reps === 2 ? 6 : Math.round((v.interval || 1) * ef);
+  }
+  v.ef = ef;
+  v.correct = easy ? (v.correct || 0) + 1 : 0;
+  v.learned = v.correct >= 3;
+  const due = new Date(); due.setDate(due.getDate() + v.interval);
+  v.dueDate = due.toDateString();
+  // daily goal tracking
+  if (easy) {
+    const today = new Date().toDateString();
+    const g = JSON.parse(localStorage.getItem('dailyGoal') || '{"date":"","done":0,"target":10}');
+    if (g.date !== today) { g.date = today; g.done = 0; }
+    g.done++;
+    localStorage.setItem('dailyGoal', JSON.stringify(g));
+  }
+}
+
+// ── DAILY GOAL ──
+function changeGoal(delta) {
+  const g = JSON.parse(localStorage.getItem('dailyGoal') || '{"date":"","done":0,"target":10}');
+  g.target = Math.max(5, (g.target || 10) + delta);
+  localStorage.setItem('dailyGoal', JSON.stringify(g));
+  renderProgress();
+}
+
+// ── READING COMPREHENSION ──
+let currentReadText = '';
+let readQuestionData = [];
+let readAnswers = [];
+
+async function startReading(level, topic) {
+  currentReadText = ''; readQuestionData = []; readAnswers = [];
+  document.getElementById('readIntro').style.display = 'none';
+  document.getElementById('readLoadingCard').style.display = 'flex';
+  document.getElementById('readTextCard').style.display = 'none';
+  document.getElementById('readQuestionsCard').style.display = 'none';
+  try {
+    const seed = Math.floor(Math.random()*99999);
+    const raw = await callAI([{role:'user',content:
+      `Write a ${level} level English reading text about "${topic}" (150–200 words). Then create 4 comprehension questions with 3 options each. seed:${seed}
+Return ONLY valid JSON:
+{"text":"Full reading text here...","questions":[{"question":"What is...?","options":["A","B","C"],"correct":0,"explanation":"The text states..."}]}`}], 1100);
+    const data = JSON.parse(extractJSON(raw,'object'));
+    if (!data.text || !data.questions?.length) throw new Error('invalid');
+    currentReadText = data.text;
+    readQuestionData = data.questions;
+    readAnswers = new Array(readQuestionData.length).fill(null);
+    document.getElementById('readLevelBadge').textContent = level;
+    document.getElementById('readText').textContent = data.text;
+    document.getElementById('readLoadingCard').style.display = 'none';
+    document.getElementById('readTextCard').style.display = 'flex';
+  } catch(e) {
+    document.getElementById('readLoadingCard').style.display = 'none';
+    document.getElementById('readIntro').style.display = 'flex';
+    alert('Fehler: ' + e.message);
+  }
+}
+
+function readShowQuestions() {
+  document.getElementById('readTextCard').style.display = 'none';
+  const qDiv = document.getElementById('readQuestions');
+  qDiv.innerHTML = readQuestionData.map((q,i) => `
+    <div style="margin-bottom:16px">
+      <div style="font-weight:600;margin-bottom:8px;font-size:15px">${i+1}. ${escHtml(q.question)}</div>
+      ${q.options.map((opt,j) => `<button class="test-opt" id="ropt-${i}-${j}" onclick="readSelectOpt(${i},${j})">${escHtml(opt)}</button>`).join('')}
+    </div>`).join('');
+  document.getElementById('readQuestionsCard').style.display = 'flex';
+}
+
+function readSelectOpt(qi,oi) {
+  readQuestionData[qi].options.forEach((_,j) => document.getElementById(`ropt-${qi}-${j}`)?.classList.remove('selected'));
+  document.getElementById(`ropt-${qi}-${oi}`).classList.add('selected');
+  readAnswers[qi] = oi;
+  document.getElementById('readCheckBtn').disabled = readAnswers.some(a => a === null);
+}
+
+function readCheck() {
+  let correct = 0;
+  readQuestionData.forEach((q,i) => {
+    q.options.forEach((_,j) => {
+      const btn = document.getElementById(`ropt-${i}-${j}`);
+      if (!btn) return;
+      btn.disabled = true; btn.classList.remove('selected');
+      if (j === q.correct) btn.classList.add('correct');
+      else if (j === readAnswers[i]) btn.classList.add('wrong');
+    });
+    if (readAnswers[i] === q.correct) correct++;
+  });
+  const pct = Math.round(correct/readQuestionData.length*100);
+  document.getElementById('readResult').innerHTML =
+    `<div style="text-align:center"><div style="font-size:32px">${pct===100?'🎉':pct>=50?'👍':'📚'}</div>
+     <div style="font-size:20px;font-weight:700">${correct}/${readQuestionData.length} — ${pct}%</div></div>`;
+  document.getElementById('readResult').style.display = 'block';
+  document.getElementById('readCheckBtn').style.display = 'none';
+  document.getElementById('readNewBtn').style.display = 'block';
+}
+
+function readReset() {
+  document.getElementById('readQuestionsCard').style.display = 'none';
+  document.getElementById('readTextCard').style.display = 'none';
+  document.getElementById('readIntro').style.display = 'flex';
+}
+
+function switchSkillsMode(mode) {
+  ['listen','write','dict','read'].forEach(m => {
+    document.getElementById(`skills${m.charAt(0).toUpperCase()+m.slice(1)}Btn`).classList.toggle('active', mode===m);
+    document.getElementById(`skills${m.charAt(0).toUpperCase()+m.slice(1)}Panel`).style.display = mode===m?'flex':'none';
+  });
+}
+
+// ── PROGRESS DASHBOARD ──
+function renderProgress() {
+  const total = vocab.length;
+  const learned = vocab.filter(v => v.learned).length;
+  const inProgress = vocab.filter(v => !v.learned && v.correct > 0).length;
+  const fresh = total - learned - inProgress;
+  const streak = vocabStreak;
+  const days = parseInt(localStorage.getItem('learningDays') || '1');
+
+  document.getElementById('pgTotal').textContent = total;
+  document.getElementById('pgLearned').textContent = learned;
+  document.getElementById('pgStreak').textContent = streak;
+  document.getElementById('pgDays').textContent = days;
+
+  // Daily goal
+  const today = new Date().toDateString();
+  const g = JSON.parse(localStorage.getItem('dailyGoal') || '{"date":"","done":0,"target":10}');
+  if (g.date !== today) { g.done = 0; }
+  const target = g.target || 10;
+  const done = g.done || 0;
+  const pct = Math.min(100, Math.round(done/target*100));
+  document.getElementById('pgGoalDone').textContent = done;
+  document.getElementById('pgGoalTarget').textContent = target;
+  document.getElementById('pgGoalBar').style.width = pct + '%';
+  document.getElementById('pgGoalMsg').textContent = pct >= 100
+    ? '🎉 Tagesziel erreicht!' : pct >= 50
+    ? `Weiter so — ${target - done} Wörter fehlen noch!`
+    : `${done} von ${target} Wörtern heute gelernt.`;
+
+  // Due today (SM-2)
+  const todayStr = new Date().toDateString();
+  const dueToday = vocab.filter(v => !v.learned && v.dueDate && v.dueDate <= todayStr).length;
+  if (dueToday > 0) {
+    const dueBadge = document.querySelector('.nav-btn:nth-child(2) .icon');
+    if (dueBadge) dueBadge.textContent = '📖';
+  }
+
+  const setPct = (id, n) => { document.getElementById(id).style.width = total ? Math.round(n/total*100)+'%' : '0%'; };
+  setPct('pgBarLearned', learned);
+  setPct('pgBarProg', inProgress);
+  setPct('pgBarNew', fresh);
+  document.getElementById('pgBarLearnedN').textContent = learned;
+  document.getElementById('pgBarProgN').textContent = inProgress;
+  document.getElementById('pgBarNewN').textContent = fresh;
+
+  // Due words (not yet learned, sorted by fewest correct first)
+  const due = vocab.filter(v => !v.learned).sort((a,b) => (a.correct||0)-(b.correct||0)).slice(0,5);
+  document.getElementById('pgDueWords').innerHTML = due.length
+    ? due.map(v => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span>${escHtml(v.word)}</span>
+        <span style="color:var(--text-muted)">${escHtml(v.translation)} · ${v.correct||0}/3 ✓</span>
+      </div>`).join('')
+    : (total === 0 ? 'Noch keine Vokabeln vorhanden.' : '🎉 Alle Wörter gelernt!');
+
+  const tips = [
+    'Tägliches Üben für 15 Minuten ist effektiver als eine Stunde pro Woche.',
+    'Lerne Wörter immer im Kontext eines Satzes — nicht isoliert.',
+    'Phrasal Verbs sind essentiell für natürliches Englisch: look up, give up, carry on.',
+    'Present Perfect vs. Past Simple: "I have seen" (Ergebnis zählt) vs. "I saw" (Zeitpunkt zählt).',
+    'Idiome lernen: "break the ice", "hit the nail on the head", "under the weather".',
+    'Conditionals: If I were you… (2nd conditional) — nicht "If I was you".',
+    'Articles: "the" für Bekanntes, "a/an" für erstmalig Genanntes.',
+  ];
+  document.getElementById('pgGrammarTip').textContent = tips[Math.floor(Math.random()*tips.length)];
+
+  // Track learning days
+  const today = new Date().toDateString();
+  const lastDay = localStorage.getItem('lastLearningDay');
+  if (lastDay !== today) {
+    localStorage.setItem('lastLearningDay', today);
+    localStorage.setItem('learningDays', String(days + (lastDay ? 1 : 0)));
+  }
+
+  // ── Weakness analysis ──
+  const weaknesses = [];
+
+  // Grammar weaknesses: topics with < 60% and at least 3 attempts
+  Object.entries(grammarStats).forEach(([topic, s]) => {
+    if (s.total >= 3) {
+      const pct = Math.round(s.correct / s.total * 100);
+      if (pct < 65) weaknesses.push({ type: 'grammar', topic, pct, label: grammarTopics[topic]?.label || topic });
+    }
+  });
+  weaknesses.sort((a, b) => a.pct - b.pct);
+
+  // Vocab weaknesses: words with most mistakes
+  const hardWords = vocab.filter(v => (v.mistakes || 0) >= 2)
+    .sort((a, b) => (b.mistakes || 0) - (a.mistakes || 0)).slice(0, 3);
+
+  const wDiv = document.getElementById('pgWeaknesses');
+  const hasData = weaknesses.length > 0 || hardWords.length > 0;
+  document.getElementById('pgWeaknessCount').textContent = hasData ? weaknesses.length + hardWords.length + ' gefunden' : '';
+  document.getElementById('pgTrainBtn').style.display = hasData ? 'block' : 'none';
+  document.getElementById('pgAdaptiveCard').style.display = 'none';
+
+  if (!hasData) {
+    wDiv.textContent = 'Noch zu wenig Daten — mach einige Quizze und Vokabeltests!';
+  } else {
+    let html = '';
+    weaknesses.slice(0, 3).forEach(w => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span>${w.label}</span>
+        <span style="color:var(--danger);font-weight:700">${w.pct}% ✓</span>
+      </div>`;
+    });
+    hardWords.forEach(v => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span>${escHtml(v.word)} <span style="color:var(--text-muted);font-size:12px">(${escHtml(v.translation)})</span></span>
+        <span style="color:var(--danger);font-weight:700">${v.mistakes}× falsch</span>
+      </div>`;
+    });
+    wDiv.innerHTML = html;
+  }
+}
+
+async function startWeaknessTraining() {
+  document.getElementById('pgAdaptiveLoading').style.display = 'flex';
+  document.getElementById('pgAdaptiveCard').style.display = 'none';
+  document.getElementById('pgTrainBtn').disabled = true;
+
+  // Build weakness profile
+  const grammarWeak = Object.entries(grammarStats)
+    .filter(([, s]) => s.total >= 3 && s.correct/s.total < 0.65)
+    .sort((a, b) => a[1].correct/a[1].total - b[1].correct/b[1].total)
+    .slice(0, 3)
+    .map(([t, s]) => `${grammarTopics[t]?.label || t} (${Math.round(s.correct/s.total*100)}%)`);
+
+  const vocabWeak = vocab.filter(v => (v.mistakes||0) >= 2)
+    .sort((a, b) => (b.mistakes||0) - (a.mistakes||0)).slice(0, 5)
+    .map(v => `"${v.word}" (${v.translation}, ${v.mistakes}× falsch)`);
+
+  const profile = [
+    grammarWeak.length ? 'Schwache Grammar-Themen: ' + grammarWeak.join(', ') : '',
+    vocabWeak.length ? 'Schwierige Vokabeln: ' + vocabWeak.join(', ') : ''
+  ].filter(Boolean).join('\n');
+
+  try {
+    const raw = await callAI([{ role: 'user', content:
+      `You are an English language coach. Analyze these learner weaknesses and give a short personal feedback in German (2-3 sentences), then suggest 2 specific exercises to improve.
+Weaknesses:\n${profile}
+Return ONLY valid JSON:
+{"feedback":"Du hast Schwierigkeiten mit...","exercises":[{"label":"Grammar: Tenses üben","action":"grammar","topic":"tenses"},{"label":"Vokabeln wiederholen","action":"vocab"}]}
+action is one of: "grammar" (with topic key), "vocab", "fill" (with topic key), "dictation".` }], 400);
+    const data = JSON.parse(extractJSON(raw, 'object'));
+
+    document.getElementById('pgAdaptiveLoading').style.display = 'none';
+    document.getElementById('pgAdaptiveCard').style.display = 'flex';
+    document.getElementById('pgAdaptiveText').textContent = data.feedback;
+
+    document.getElementById('pgAdaptiveBtns').innerHTML = data.exercises.map(ex => {
+      let onclick = '';
+      if (ex.action === 'grammar' && ex.topic) onclick = `switchTab('grammar', document.querySelector('.nav-btn:nth-child(3)'));switchGrammarMode('quiz');startGrammar('${ex.topic}')`;
+      else if (ex.action === 'vocab') onclick = `switchTab('vocab', document.querySelector('.nav-btn:nth-child(2)'));switchVocabMode('quiz');startVocabQuiz('all')`;
+      else if (ex.action === 'fill' && ex.topic) onclick = `switchTab('grammar', document.querySelector('.nav-btn:nth-child(3)'));switchGrammarMode('fill');startFill('${ex.topic}')`;
+      else if (ex.action === 'dictation') onclick = `switchTab('skills', document.querySelector('.nav-btn:nth-child(5)'));switchSkillsMode('dict')`;
+      return `<button class="btn secondary" style="font-size:13px" onclick="${onclick}">${escHtml(ex.label)}</button>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('pgAdaptiveLoading').style.display = 'none';
+    // Fallback: direct links without AI
+    document.getElementById('pgAdaptiveCard').style.display = 'flex';
+    const weakestTopic = Object.entries(grammarStats).sort((a,b) => a[1].correct/a[1].total - b[1].correct/b[1].total)[0];
+    document.getElementById('pgAdaptiveText').textContent = 'Hier sind gezielte Übungen für deine Schwachstellen:';
+    let btns = '';
+    if (weakestTopic) btns += `<button class="btn secondary" style="font-size:13px" onclick="switchTab('grammar',document.querySelector('.nav-btn:nth-child(3)'));switchGrammarMode('quiz');startGrammar('${weakestTopic[0]}')">📚 ${grammarTopics[weakestTopic[0]]?.label}</button>`;
+    if (vocabWeak.length) btns += `<button class="btn secondary" style="font-size:13px" onclick="switchTab('vocab',document.querySelector('.nav-btn:nth-child(2)'));switchVocabMode('quiz');startVocabQuiz('all')">📖 Vokabeln testen</button>`;
+    document.getElementById('pgAdaptiveBtns').innerHTML = btns;
+  }
+  document.getElementById('pgTrainBtn').disabled = false;
 }
 
 // ── PLACEMENT TEST ──

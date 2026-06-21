@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0F0F1A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="English Bot">
+<title>English Learning Bot</title>
+<style>
+  :root {
+    --primary: #4F46E5;
+    --primary-light: #818CF8;
+    --accent: #10B981;
+    --danger: #EF4444;
+    --warn: #F59E0B;
+    --bg: #0F0F1A;
+    --surface: #1A1A2E;
+    --surface2: #252540;
+    --text: #E2E8F0;
+    --text-muted: #94A3B8;
+    --border: #2D2D50;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
+    overscroll-behavior: none;
+  }
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .topbar h1 { font-size: 18px; font-weight: 700; }
+  .topbar h1 span { color: var(--primary-light); }
+  .tts-toggle {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; font-size: 14px; cursor: pointer;
+    color: var(--text-muted); transition: all 0.2s; white-space: nowrap;
+  }
+  .tts-toggle.on { background: #1e1b4b; border-color: var(--primary-light); color: var(--primary-light); }
+
+  .main { flex: 1; overflow: hidden; position: relative; }
+  .tab-content {
+    display: none; height: 100%; overflow-y: auto;
+    padding: 16px; padding-bottom: 80px;
+  }
+  .tab-content.active { display: flex; flex-direction: column; gap: 12px; }
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+    transition: transform 0.15s ease;
+  }
+  .bottom-nav.hidden { transform: translateY(100%); }
+  .footer-label { text-align: center; font-size: 11px; color: var(--text-muted); padding: 4px 0 0; }
+  .nav-row { display: flex; }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer; padding: 10px 0; border: none; background: none;
+    color: var(--text-muted); font-size: 11px; transition: color 0.15s;
+    min-height: 56px; /* großes Touch-Target */
+    user-select: none;
+  }
+  .nav-btn.active { color: var(--primary-light); }
+  .nav-btn .icon { font-size: 24px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px;
+  }
+  .btn {
+    background: var(--primary); color: white; border: none;
+    border-radius: 10px; padding: 14px 20px; font-size: 16px; font-weight: 600;
+    cursor: pointer; width: 100%; transition: opacity 0.15s;
+    user-select: none; -webkit-user-select: none;
+    min-height: 50px;
+  }
+  .btn:active { opacity: 0.7; transform: scale(0.98); }
+  .btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn.success { background: var(--accent); }
+  .btn.danger { background: var(--danger); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  input, textarea, select {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 16px; /* 16px verhindert Auto-Zoom auf Mobile */
+    padding: 12px; width: 100%; outline: none; font-family: inherit;
+    -webkit-appearance: none; appearance: none;
+  }
+  input:focus, textarea:focus { border-color: var(--primary-light); }
+  label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; display: block; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+  .badge.green { background: #064E3B; color: #34D399; }
+  .badge.blue { background: #1E1B4B; color: #A5B4FC; }
+
+  /* CHAT */
+  #chat-messages {
+    flex: 1; display: flex; flex-direction: column; gap: 10px;
+    overflow-y: auto; padding-bottom: 4px;
+  }
+  .msg-wrap { display: flex; flex-direction: column; gap: 3px; }
+  .msg-wrap.user-wrap { align-items: flex-end; }
+  .msg-wrap.bot-wrap { align-items: flex-start; }
+  .msg {
+    max-width: 85%; padding: 10px 14px;
+    border-radius: 16px; font-size: 15px; line-height: 1.45;
+  }
+  .msg.bot { background: var(--surface2); border-bottom-left-radius: 4px; }
+  .msg.user { background: var(--primary); border-bottom-right-radius: 4px; }
+  .msg.correction { background: #1C1830; border: 1px solid #7C3AED44; border-bottom-left-radius: 4px; font-size: 13px; color: #C4B5FD; }
+  .speak-btn {
+    background: none; border: none; font-size: 13px; color: var(--text-muted);
+    cursor: pointer; padding: 2px 6px; border-radius: 6px; transition: color 0.2s;
+    align-self: flex-start;
+  }
+  .speak-btn:hover { color: var(--primary-light); }
+  .speak-btn.speaking { color: var(--accent); animation: blink 0.8s infinite; }
+  @keyframes blink { 50% { opacity: 0.4; } }
+
+  .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .chat-input-row textarea { flex: 1; resize: none; min-height: 44px; max-height: 120px; padding: 10px 12px; }
+  .icon-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; width: 44px; height: 44px; font-size: 20px;
+    cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .icon-btn.recording { background: var(--danger); border-color: var(--danger); animation: pulse 1.2s infinite; }
+  .send-btn {
+    background: var(--primary); border: none; border-radius: 10px;
+    width: 44px; height: 44px; font-size: 20px; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 6px 12px; border-radius: 99px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--surface2);
+    cursor: pointer; color: var(--text-muted);
+  }
+  .chip.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+  /* VOCAB */
+  .flashcard {
+    background: linear-gradient(135deg, var(--surface), var(--surface2));
+    border: 2px solid var(--border); border-radius: 20px;
+    padding: 40px 20px; text-align: center; cursor: pointer; min-height: 180px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    transition: transform 0.15s;
+  }
+  .flashcard:active { transform: scale(0.97); }
+  .flashcard .front-word { font-size: 28px; font-weight: 700; }
+  .flashcard .back-word { font-size: 22px; color: var(--accent); font-weight: 600; }
+  .flashcard .example { font-size: 13px; color: var(--text-muted); font-style: italic; margin-top: 8px; }
+  .flashcard .tap-hint { font-size: 12px; color: var(--text-muted); }
+  .vocab-actions { display: flex; gap: 8px; }
+  .vocab-actions .btn { flex: 1; }
+  .vocab-stats { display: flex; gap: 8px; }
+  .stat-box { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px; text-align: center; }
+  .stat-box .num { font-size: 22px; font-weight: 700; color: var(--primary-light); }
+  .stat-box .lbl { font-size: 11px; color: var(--text-muted); }
+  .vocab-list { display: flex; flex-direction: column; gap: 6px; }
+  .vocab-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .vocab-item .word { font-weight: 600; }
+  .vocab-item .translation { color: var(--text-muted); font-size: 13px; }
+  .del-btn { background: none; border: none; color: var(--danger); font-size: 18px; cursor: pointer; padding: 0 4px; }
+
+  /* GRAMMAR */
+  .quiz-question { font-size: 17px; font-weight: 600; line-height: 1.5; }
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .option-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 15px; padding: 14px 16px; text-align: left; cursor: pointer; transition: all 0.15s; min-height: 52px; }
+  .option-btn:disabled { cursor: default; }
+  .option-btn.correct { border-color: var(--accent); background: #064E3B44; color: #34D399; }
+  .option-btn.wrong { border-color: var(--danger); background: #450A0A44; color: #FCA5A5; }
+  .explanation { background: var(--surface2); border-left: 3px solid var(--primary-light); border-radius: 0 10px 10px 0; padding: 12px; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+  .progress-bar-wrap { background: var(--surface2); border-radius: 99px; height: 6px; overflow: hidden; }
+  .progress-bar-fill { background: var(--primary-light); height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+
+  /* SPEAK */
+  .mic-btn {
+    width: 96px; height: 96px; border-radius: 50%; border: none;
+    background: var(--primary); font-size: 40px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto; transition: transform 0.15s;
+    box-shadow: 0 4px 24px rgba(79,70,229,0.5);
+    user-select: none; -webkit-user-select: none;
+  }
+  .mic-btn:active { transform: scale(0.92); }
+  .mic-btn.recording { background: var(--danger); box-shadow: 0 4px 24px rgba(239,68,68,0.5); animation: pulse 1.2s infinite; }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+    70%  { box-shadow: 0 0 0 20px rgba(239,68,68,0); }
+    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+  }
+  .pron-sentence { font-size: 19px; font-weight: 600; text-align: center; line-height: 2; padding: 8px; }
+  /* Live word tracking */
+  .pw { display: inline-block; border-radius: 5px; padding: 0 3px; margin: 0 1px; transition: color 0.2s, background 0.2s; }
+  .pw-live { color: #34D399; }
+  .pw-current { color: #818CF8; background: #1e1b4b; animation: wordpulse 0.8s infinite alternate; }
+  .pw-ok  { color: #34D399; background: #064E3B44; }
+  .pw-err { color: #FCA5A5; background: #450A0A44; text-decoration: underline wavy #EF4444 2px; }
+  @keyframes wordpulse { from { opacity: 0.6; } to { opacity: 1; } }
+  .listen-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 600;
+    color: var(--text-muted); cursor: pointer; margin: 0 auto;
+    display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+  }
+  .listen-btn:hover { border-color: var(--primary-light); color: var(--primary-light); }
+  .listen-btn.slow { border-color: var(--warn); color: var(--warn); }
+  .score-ring {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: conic-gradient(var(--accent) 0%, var(--surface2) 0%);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto; position: relative;
+  }
+  .score-ring::before { content: ''; width: 76px; height: 76px; background: var(--bg); border-radius: 50%; position: absolute; }
+  .score-ring .score-num { position: relative; z-index: 1; font-size: 24px; font-weight: 800; color: var(--accent); }
+  .visualizer-wrap { width: 100%; height: 64px; position: relative; }
+  #vizCanvas { width: 100%; height: 64px; border-radius: 10px; background: var(--surface2); display: block; }
+
+  /* WORD DIFF */
+  .word-diff {
+    font-size: 16px; line-height: 2.2; text-align: center;
+    background: var(--surface2); border-radius: 10px; padding: 12px 14px;
+    width: 100%;
+  }
+  .wd { display: inline-block; padding: 1px 5px; border-radius: 5px; margin: 2px; font-weight: 600; }
+  .wd-ok  { background: #064E3B55; color: #34D399; }
+  .wd-err { background: #450A0A55; color: #FCA5A5; text-decoration: underline wavy #EF4444; }
+  .wd-extra { background: #451a0355; color: #FCD34D; font-style: italic; }
+
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary-light); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .section-title { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+  .mic-hint { font-size: 12px; color: var(--text-muted); text-align: center; background: var(--surface2); border-radius: 8px; padding: 8px 12px; }
+  .grammar-mode-btn {
+    flex: 1; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 700;
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .grammar-mode-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+  /* Fill-in blanks */
+  .fill-text { font-size: 16px; line-height: 2.4; background: var(--surface2); border-radius: 10px; padding: 14px; }
+  .blank-group { display: inline-flex; gap: 4px; vertical-align: middle; margin: 0 2px; flex-wrap: wrap; }
+  .blank-opt {
+    padding: 3px 10px; border-radius: 6px; font-size: 14px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .blank-opt.selected { background: #1e1b4b; border-color: var(--primary-light); color: var(--primary-light); }
+  .blank-opt.correct  { background: #064E3B55; border-color: var(--accent); color: #34D399; }
+  .blank-opt.wrong    { background: #450A0A55; border-color: var(--danger); color: #FCA5A5; }
+  .blank-opt:disabled { cursor: default; }
+  .interest-chip {
+    padding: 6px 12px; border-radius: 99px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--surface2);
+    cursor: pointer; color: var(--text-muted); display: flex; align-items: center; gap: 5px;
+    transition: all 0.15s; user-select: none;
+  }
+  .interest-chip.on { background: #1e1b4b; border-color: var(--primary-light); color: var(--primary-light); }
+  .interest-chip .del { font-size: 14px; color: var(--danger); margin-left: 2px; }
+  /* Placement Test */
+  .level-badge {
+    display: inline-block; font-size: 36px; font-weight: 900; letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; padding: 4px 0;
+  }
+  .test-opt {
+    width: 100%; text-align: left; padding: 12px 16px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+    font-size: 15px; cursor: pointer; transition: all 0.15s; margin-bottom: 8px;
+  }
+  .test-opt.selected { background: #1e1b4b; border-color: var(--primary-light); color: var(--primary-light); }
+  .test-opt.correct  { background: #064E3B55; border-color: var(--accent); color: #34D399; pointer-events:none; }
+  .test-opt.wrong    { background: #450A0A55; border-color: var(--danger); color: #FCA5A5; pointer-events:none; }
+  .test-opt:disabled { cursor: default; }
+  .level-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .level-bar-label { width: 28px; font-size: 12px; font-weight: 700; color: var(--text-muted); }
+  .level-bar-wrap { flex: 1; background: var(--surface2); border-radius: 99px; height: 8px; overflow: hidden; }
+  .level-bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; background: var(--primary-light); }
+  .level-bar-fill.pass { background: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>English <span>Bot</span> 🇬🇧</h1>
+  <button class="tts-toggle on" id="ttsToggle" onclick="toggleTTS()">🔊 Voice on</button>
+</div>
+
+<div class="main">
+
+  <!-- CHAT -->
+  <div class="tab-content active" id="tab-chat">
+    <div class="chip-row">
+      <div class="chip active" data-mode="freeChat" onclick="setMode(this)">💬 Free Talk</div>
+      <div class="chip" data-mode="corrections" onclick="setMode(this)">✏️ Corrections</div>
+      <div class="chip" data-mode="formal" onclick="setMode(this)">👔 Formal</div>
+      <div class="chip" data-mode="interview" onclick="setMode(this)">🎤 Interview</div>
+    </div>
+    <div id="chat-messages">
+      <div class="msg-wrap bot-wrap">
+        <div class="msg bot">Hi! I'm your English conversation partner. What would you like to talk about? 😊</div>
+        <button class="speak-btn" onclick="speakMsg(this, 'Hi! I\'m your English conversation partner. What would you like to talk about?')">🔊 Listen</button>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <button class="icon-btn" id="chatMicBtn" onclick="toggleChatMic()" title="Speak instead of typing">🎤</button>
+      <textarea id="chatInput" placeholder="Type or speak in English..." rows="1"
+        onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+
+  <!-- VOCAB -->
+  <div class="tab-content" id="tab-vocab">
+    <div class="vocab-stats">
+      <div class="stat-box"><div class="num" id="vocabTotal">0</div><div class="lbl">Total</div></div>
+      <div class="stat-box"><div class="num" id="vocabLearned">0</div><div class="lbl">Learned</div></div>
+      <div class="stat-box"><div class="num" id="vocabStreak">0</div><div class="lbl">Streak 🔥</div></div>
+    </div>
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+      <div class="tap-hint">Add vocabulary below to start</div>
+    </div>
+
+    <!-- Voice answer area -->
+    <div id="vocabVoiceArea" style="display:none;flex-direction:column;gap:8px">
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="listen-btn" id="vocabMicBtn" onclick="toggleVocabMic()" style="padding:10px 20px;font-size:14px">
+          🎤 Speak German translation
+        </button>
+        <button class="listen-btn" onclick="flipCard()" style="padding:10px 16px;font-size:14px;border-color:var(--border)">
+          👁 Show answer
+        </button>
+      </div>
+      <div id="vocabVoiceStatus" style="text-align:center;font-size:13px;color:var(--text-muted);min-height:18px"></div>
+      <div id="vocabVoiceFeedback" style="display:none;border-radius:10px;padding:12px 14px;font-size:14px;font-weight:600;text-align:center"></div>
+    </div>
+
+    <div class="vocab-actions" id="vocabActions" style="display:none">
+      <button class="btn danger" onclick="markCard(false)">✗ Hard</button>
+      <button class="btn success" onclick="markCard(true)">✓ Easy</button>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:pointer" onclick="toggleInterests()">
+        <div class="section-title">My Interests</div>
+        <span id="interestsToggleIcon" style="color:var(--text-muted);font-size:13px">▼</span>
+      </div>
+      <div id="interestsPanel">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="interestChips"></div>
+        <input id="customInterest" placeholder="Add your own topic…" style="margin-bottom:8px"
+          onkeydown="if(event.key==='Enter'){addCustomInterest();event.preventDefault()}"/>
+        <button class="btn secondary" style="font-size:13px;min-height:40px" onclick="addCustomInterest()">+ Add topic</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title" style="margin-bottom:10px">Add Word</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input id="newWord" placeholder="English word or phrase" />
+        <input id="newTranslation" placeholder="German translation" />
+        <button class="btn" onclick="addVocab()">+ Add</button>
+        <button class="btn secondary" onclick="generateVocab()">✨ AI: Suggest words for my interests</button>
+      </div>
+    </div>
+    <div id="vocabListWrap" style="display:none">
+      <div class="section-title" style="margin-bottom:8px">My Words</div>
+      <div class="vocab-list" id="vocabList"></div>
+    </div>
+  </div>
+
+  <!-- GRAMMAR -->
+  <div class="tab-content" id="tab-grammar">
+    <!-- Mode switcher -->
+    <div style="display:flex;gap:8px">
+      <button class="grammar-mode-btn active" id="modeQuizBtn" onclick="switchGrammarMode('quiz')">📚 Quiz</button>
+      <button class="grammar-mode-btn" id="modeFillBtn" onclick="switchGrammarMode('fill')">📄 Fill-in Text</button>
+    </div>
+
+    <!-- QUIZ mode -->
+    <div id="grammarQuizPanel" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="section-title">Grammar Quiz</div>
+        <span class="badge blue" id="grammarScore">0 / 0</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="grammarProgress" style="width:0%"></div>
+      </div>
+      <div id="grammarArea">
+        <div class="card" style="padding:20px">
+          <div style="font-size:28px;text-align:center;margin-bottom:8px">📚</div>
+          <div style="text-align:center;margin-bottom:14px;color:var(--text-muted);font-size:14px">Choose a topic</div>
+          <div id="topicGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILL-IN-TEXT mode -->
+    <div id="grammarFillPanel" style="display:none;flex-direction:column;gap:12px">
+      <div id="fillArea">
+        <div class="card" style="padding:20px">
+          <div style="font-size:28px;text-align:center;margin-bottom:8px">📄</div>
+          <div style="text-align:center;margin-bottom:14px;color:var(--text-muted);font-size:14px">Choose a topic for your text</div>
+          <div id="fillTopicGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLACEMENT TEST -->
+  <div class="tab-content" id="tab-test">
+    <div class="card" id="testIntro" style="text-align:center;padding:28px;display:flex;flex-direction:column;gap:14px;align-items:center">
+      <div style="font-size:48px">🎓</div>
+      <div class="section-title">Placement Test</div>
+      <div style="color:var(--text-muted);font-size:14px;line-height:1.6;max-width:300px">
+        20 Fragen zu Grammatik, Vokabular und Idiomen.<br>
+        Resultat: <strong style="color:var(--primary-light)">B1 · B2 · C1 · C2</strong>
+      </div>
+      <button class="btn" style="margin-top:8px" onclick="startPlacementTest()">▶ Test starten</button>
+    </div>
+
+    <div id="testLoadingCard" class="card" style="display:none;text-align:center;padding:32px;gap:14px;flex-direction:column;align-items:center">
+      <div class="spinner" style="width:40px;height:40px;border-width:4px"></div>
+      <div style="color:var(--text-muted);font-size:14px">Fragen werden generiert…</div>
+    </div>
+
+    <div id="testQuestionCard" class="card" style="display:none;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="badge blue" id="testLevelBadge">B1</span>
+        <span style="font-size:13px;color:var(--text-muted)" id="testCounter">1 / 20</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="testProgress" style="width:5%"></div>
+      </div>
+      <div id="testQuestion" style="font-size:16px;font-weight:600;line-height:1.5"></div>
+      <div id="testOptions"></div>
+      <div id="testExplanation" class="explanation" style="display:none"></div>
+      <button class="btn" id="testNextBtn" style="display:none" onclick="testNext()">Weiter →</button>
+    </div>
+
+    <div id="testResultCard" class="card" style="display:none;flex-direction:column;gap:16px;align-items:center;padding:28px">
+      <div style="font-size:32px">🎓</div>
+      <div style="font-size:16px;color:var(--text-muted)">Dein Niveau:</div>
+      <div class="level-badge" id="testResultLevel">B2</div>
+      <div id="testResultDesc" style="text-align:center;font-size:14px;color:var(--text-muted);line-height:1.6;max-width:300px"></div>
+      <div id="testLevelBars" style="width:100%;margin-top:4px"></div>
+      <div style="font-size:13px;color:var(--text-muted)" id="testTotalScore"></div>
+      <button class="btn" style="margin-top:8px" onclick="resetPlacementTest()">🔄 Nochmals testen</button>
+    </div>
+  </div>
+
+  <!-- SPEAK -->
+  <div class="tab-content" id="tab-pronunciation">
+    <div class="card" style="text-align:center;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div class="section-title">Practice Sentence</div>
+      <div class="pron-sentence" id="pronSentence">Press 🔄 to get a sentence</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="listen-btn" id="listenNormalBtn" onclick="listenToSentence(1.0)">🔊 Listen</button>
+        <button class="listen-btn slow" id="listenSlowBtn" onclick="listenToSentence(0.6)">🐢 Slow</button>
+        <button class="btn secondary" style="width:auto;padding:8px 16px;font-size:13px" onclick="newPronSentence()">🔄 New</button>
+      </div>
+    </div>
+    <div class="card" style="text-align:center;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div class="visualizer-wrap">
+        <canvas id="vizCanvas"></canvas>
+      </div>
+      <button class="mic-btn" id="micBtn" onclick="toggleRecording()">🎤</button>
+      <div id="micStatus" style="color:var(--text-muted);font-size:14px">Tap the microphone and speak</div>
+      <div id="micHint" class="mic-hint" style="display:none"></div>
+    </div>
+    <div class="card" id="pronResult" style="display:none;gap:14px;align-items:center">
+      <div class="section-title" style="align-self:flex-start">Your result</div>
+      <div class="score-ring" id="scoreRing"><div class="score-num" id="scoreNum">–</div></div>
+      <div id="pronFeedback" style="text-align:center;font-size:14px;line-height:1.6;color:var(--text-muted)"></div>
+      <div id="wordDiff" class="word-diff" style="display:none"></div>
+      <div id="pronTranscript" style="font-size:13px;background:var(--surface2);border-radius:8px;padding:10px;width:100%"></div>
+      <button class="listen-btn" onclick="listenToSentence(1.0)" style="margin-top:4px">🔊 Hear correct version again</button>
+    </div>
+  </div>
+
+</div>
+
+<nav class="bottom-nav">
+  <div class="footer-label">Für meine Liebe ❤️</div>
+  <div class="nav-row">
+    <button class="nav-btn active" onclick="switchTab('chat', this)"><span class="icon">💬</span>Chat</button>
+    <button class="nav-btn" onclick="switchTab('vocab', this)"><span class="icon">📖</span>Vocab</button>
+    <button class="nav-btn" onclick="switchTab('grammar', this)"><span class="icon">✏️</span>Grammar</button>
+    <button class="nav-btn" onclick="switchTab('pronunciation', this)"><span class="icon">🎤</span>Speak</button>
+    <button class="nav-btn" onclick="switchTab('test', this)"><span class="icon">🎓</span>Test</button>
+  </div>
+</nav>
+
+<script>
+// ── STATE ──
+let chatMode = 'freeChat';
+let chatHistory = [];
+let vocab = JSON.parse(localStorage.getItem('vocab') || '[]');
+let vocabStreak = parseInt(localStorage.getItem('vocabStreak') || '0');
+let currentCardIdx = 0;
+let cardFlipped = false;
+let grammarQuestions = [];
+let grammarIdx = 0;
+let grammarCorrect = 0;
+let grammarTopic = '';
+let pronRecognition = null;
+let chatRecognition = null;
+let isRecording = false;
+let isChatRecording = false;
+let lastInterim = '';
+let audioCtx = null;
+let analyser = null;
+let vizAnimFrame = null;
+let mediaStream = null;
+let ttsEnabled = true;
+let ttsVoice = null;
+let ttsVoiceDE = null;
+let vocabRecognition = null;
+let isVocabRecording = false;
+const usedQuestions = Object.fromEntries(Object.keys(grammarTopics).map(k => [k, []]));
+
+const pronSentences = [
+  "The weather is beautiful today.",
+  "I would like to improve my English skills.",
+  "She sells seashells by the seashore.",
+  "How much wood would a woodchuck chuck?",
+  "The quick brown fox jumps over the lazy dog.",
+  "I enjoy learning new languages every day.",
+  "Could you please repeat that more slowly?",
+  "I'm really looking forward to our meeting.",
+  "The early bird catches the worm.",
+  "Practice makes perfect.",
+  "I've been working on this project for two weeks.",
+  "Would you mind if I joined your conversation?",
+  "She had already left when he arrived.",
+  "It's been raining all morning.",
+  "I should have called you yesterday.",
+  "He's been living in London since 2019.",
+  "By the time we arrived, the show had already started.",
+  "You ought to apologise for what you said.",
+  "Could you give me a hand with these bags?",
+  "I'd rather stay in tonight if you don't mind.",
+];
+let currentPronSentence = '';
+
+initTTS();
+renderVocabStats();
+initSpeechRecognition();
+newPronSentence();
+initVizCanvas();
+initKeyboardHandling();
+checkProtocol();
+renderTopicGrid('topicGrid');
+renderTopicGrid('fillTopicGrid', true);
+
+// ── TTS ──
+function initTTS() {
+  if (!window.speechSynthesis) return;
+  const load = () => {
+    const voices = speechSynthesis.getVoices();
+    ttsVoice =
+      voices.find(v => v.lang === 'en-GB' && /female|zira|hazel|susan|kate/i.test(v.name)) ||
+      voices.find(v => v.lang === 'en-GB') ||
+      voices.find(v => v.lang === 'en-US' && /female|samantha|karen|moira/i.test(v.name)) ||
+      voices.find(v => v.lang.startsWith('en-')) ||
+      null;
+    ttsVoiceDE =
+      voices.find(v => v.lang === 'de-DE' && /female|anna|helena|katja/i.test(v.name)) ||
+      voices.find(v => v.lang === 'de-DE') ||
+      voices.find(v => v.lang === 'de-AT' || v.lang === 'de-CH') ||
+      voices.find(v => v.lang.startsWith('de-')) ||
+      null;
+  };
+  load();
+  speechSynthesis.onvoiceschanged = load;
+}
+
+function speak(text, rate = 0.95) {
+  if (!window.speechSynthesis || !ttsEnabled) return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+  utt.lang = 'en-US';
+  utt.rate = rate;
+  utt.pitch = 1;
+  if (ttsVoice) utt.voice = ttsVoice;
+  speechSynthesis.speak(utt);
+}
+
+function speakDE(text, rate = 0.95) {
+  if (!window.speechSynthesis || !ttsEnabled) return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+  utt.lang = 'de-DE';
+  utt.rate = rate;
+  utt.pitch = 1;
+  if (ttsVoiceDE) utt.voice = ttsVoiceDE;
+  speechSynthesis.speak(utt);
+}
+
+function speakMsg(btn, text) {
+  if (window.speechSynthesis?.speaking) { speechSynthesis.cancel(); btn.classList.remove('speaking'); return; }
+  btn.classList.add('speaking');
+  const utt = new SpeechSynthesisUtterance(text.replace(/💡 Tip:|✏️|⚠️/g, '').replace(/\s+/g, ' ').trim());
+  utt.lang = 'en-US';
+  utt.rate = 0.95;
+  if (ttsVoice) utt.voice = ttsVoice;
+  utt.onend = () => btn.classList.remove('speaking');
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utt);
+}
+
+function toggleTTS() {
+  ttsEnabled = !ttsEnabled;
+  const btn = document.getElementById('ttsToggle');
+  btn.textContent = ttsEnabled ? '🔊 Voice on' : '🔇 Voice off';
+  btn.classList.toggle('on', ttsEnabled);
+  if (!ttsEnabled) speechSynthesis.cancel();
+}
+
+function listenToSentence(rate) {
+  speak(currentPronSentence, rate);
+}
+
+// ── AI API ──
+async function callAI(messages, maxTokens = 400) {
+  const res = await fetch('https://text.pollinations.ai/openai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'openai', messages, max_tokens: maxTokens, temperature: 0.9, private: true })
+  });
+  if (!res.ok) throw new Error('API error ' + res.status);
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Empty response');
+  return content;
+}
+
+// ── TAB NAVIGATION ──
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── CHAT ──
+const systemPrompts = {
+  freeChat: `You are a friendly English conversation partner helping a German speaker practise their English.
+RULES:
+- Always respond in English only — never use German.
+- Keep responses short: 2–4 sentences maximum.
+- Ask one follow-up question to keep the conversation going.
+- If you notice a grammar or vocabulary mistake, add a brief tip: "💡 Tip: …" (one sentence, at the end).
+- Only point out the most important mistake per message, not every one.
+- Be warm, encouraging and natural.`,
+
+  corrections: `You are an English teacher helping a German speaker improve their English.
+RULES:
+- Always respond in English only.
+- If the student made a grammar or vocabulary mistake, start your reply with exactly: CORRECTION: [write the fully corrected sentence]
+- Then on a new line, briefly explain what was wrong in one sentence.
+- Then respond naturally in 1–2 sentences to what they said.
+- If there are no mistakes, skip the CORRECTION line entirely and just respond naturally.
+- Be specific, encouraging and supportive.`,
+
+  formal: `You are helping a German speaker practise formal and business English.
+RULES:
+- Always respond in English only.
+- Use formal, professional language in all your replies.
+- If the student uses an informal expression, flag it: "⚠️ Formal alternative: instead of '[informal]' say '[formal version]'."
+- Keep replies to 3–5 sentences.`,
+
+  interview: `You are conducting a mock job interview in English with a German speaker.
+RULES:
+- Always respond in English only.
+- Ask one interview question at a time — never more than one.
+- After the student answers, give brief feedback on their English (vocabulary, grammar, clarity) in 1 sentence.
+- Then ask the next interview question.
+- Begin with: "Welcome! Could you please start by telling me a little about yourself?"`
+};
+
+function setMode(chip) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  chatMode = chip.dataset.mode;
+  chatHistory = [];
+  const greetings = {
+    freeChat: "Hi! I'm your English conversation partner. What would you like to talk about? 😊",
+    corrections: "Hello! Write something in English and I'll gently correct any mistakes. ✏️",
+    formal: "Good day. I will assist you in practising formal and business English. Shall we begin? 👔",
+    interview: "Welcome! Could you please start by telling me a little about yourself? 🎤"
+  };
+  const g = greetings[chatMode];
+  document.getElementById('chat-messages').innerHTML = `
+    <div class="msg-wrap bot-wrap">
+      <div class="msg bot">${escHtml(g)}</div>
+      <button class="speak-btn" onclick="speakMsg(this, ${JSON.stringify(g)})">🔊 Listen</button>
+    </div>`;
+  if (ttsEnabled) speak(g);
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function addBotMessage(text, speakText) {
+  const msgs = document.getElementById('chat-messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap bot-wrap';
+  const plain = (speakText || text).replace(/<[^>]+>/g, ' ').replace(/💡 Tip:|✏️|⚠️|CORRECTION:/g, '').replace(/\s+/g, ' ').trim();
+  wrap.innerHTML = `<div class="msg bot">${text}</div><button class="speak-btn" onclick="speakMsg(this, ${JSON.stringify(plain)})">🔊 Listen</button>`;
+  msgs.appendChild(wrap);
+  if (ttsEnabled) speak(plain);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; input.style.height = 'auto';
+
+  const msgs = document.getElementById('chat-messages');
+  const userWrap = document.createElement('div');
+  userWrap.className = 'msg-wrap user-wrap';
+  userWrap.innerHTML = `<div class="msg user">${escHtml(text)}</div>`;
+  msgs.appendChild(userWrap);
+
+  const loading = document.createElement('div');
+  loading.className = 'msg-wrap bot-wrap';
+  loading.innerHTML = '<div class="msg bot"><div class="spinner"></div></div>';
+  msgs.appendChild(loading);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  chatHistory.push({ role: 'user', content: text });
+
+  try {
+    const reply = await callAI([{ role: 'system', content: systemPrompts[chatMode] }, ...chatHistory], 500);
+    chatHistory.push({ role: 'assistant', content: reply });
+    loading.remove();
+
+    if (chatMode === 'corrections') {
+      const lines = reply.split('\n').map(l => l.trim()).filter(Boolean);
+      const corrIdx = lines.findIndex(l => l.toUpperCase().startsWith('CORRECTION:'));
+      if (corrIdx !== -1) {
+        const corrLine = lines[corrIdx];
+        const rest = lines.filter((_, i) => i !== corrIdx).join('\n');
+        const corrWrap = document.createElement('div');
+        corrWrap.className = 'msg-wrap bot-wrap';
+        corrWrap.innerHTML = `<div class="msg correction">✏️ ${escHtml(corrLine)}</div>`;
+        msgs.appendChild(corrWrap);
+        if (rest) addBotMessage(escHtml(rest));
+        else msgs.scrollTop = msgs.scrollHeight;
+      } else {
+        addBotMessage(escHtml(reply));
+      }
+    } else {
+      addBotMessage(escHtml(reply));
+    }
+  } catch(e) {
+    loading.remove();
+    const errWrap = document.createElement('div');
+    errWrap.className = 'msg-wrap bot-wrap';
+    errWrap.innerHTML = '<div class="msg bot" style="color:var(--danger)">Connection error — please try again.</div>';
+    msgs.appendChild(errWrap);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+
+// ── CHAT MIC ──
+function toggleChatMic() {
+  if (isChatRecording) {
+    if (chatRecognition) chatRecognition.abort();
+    stopChatMic(); return;
+  }
+  if (isIOS || !SR) {
+    // On iOS: focus the textarea and show keyboard dictation hint
+    const input = document.getElementById('chatInput');
+    input.focus();
+    showIOSHint('chat');
+    return;
+  }
+
+  chatRecognition = new SR();
+  chatRecognition.lang = 'en-US';
+  chatRecognition.continuous = true;
+  chatRecognition.interimResults = true;
+
+  chatRecognition.onresult = (e) => {
+    let t = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
+    if (t) { document.getElementById('chatInput').value = t; autoResize(document.getElementById('chatInput')); }
+  };
+  chatRecognition.onerror = (e) => { stopChatMic(); };
+  chatRecognition.onend   = () => { if (isChatRecording) stopChatMic(); };
+
+  isChatRecording = true;
+  document.getElementById('chatMicBtn').classList.add('recording');
+  document.getElementById('chatMicBtn').textContent = '⏹';
+  try { chatRecognition.start(); } catch(e) { stopChatMic(); }
+}
+function stopChatMic() {
+  isChatRecording = false;
+  const btn = document.getElementById('chatMicBtn');
+  btn.classList.remove('recording');
+  btn.textContent = '🎤';
+}
+
+// ── INTERESTS ──
+const PRESET_INTERESTS = [
+  {emoji:'🏥', label:'Medizin'}, {emoji:'💼', label:'Business'}, {emoji:'✈️', label:'Reisen'},
+  {emoji:'🍳', label:'Kochen'}, {emoji:'🏃', label:'Sport'}, {emoji:'💻', label:'Technologie'},
+  {emoji:'🎬', label:'Film & TV'}, {emoji:'🌿', label:'Natur'}, {emoji:'🎵', label:'Musik'},
+  {emoji:'📚', label:'Wissenschaft'}, {emoji:'💰', label:'Finanzen'}, {emoji:'🎨', label:'Kunst'},
+];
+
+let interests = JSON.parse(localStorage.getItem('interests') || '[]');
+let interestsOpen = true;
+
+function saveInterests() { localStorage.setItem('interests', JSON.stringify(interests)); }
+
+function toggleInterests() {
+  interestsOpen = !interestsOpen;
+  document.getElementById('interestsPanel').style.display = interestsOpen ? 'block' : 'none';
+  document.getElementById('interestsToggleIcon').textContent = interestsOpen ? '▲' : '▼';
+}
+
+function renderInterestChips() {
+  const container = document.getElementById('interestChips');
+  if (!container) return;
+  const all = [
+    ...PRESET_INTERESTS.map(p => ({ ...p, custom: false })),
+    ...interests.filter(i => !PRESET_INTERESTS.find(p => p.label === i.label))
+                .map(i => ({ ...i, custom: true }))
+  ];
+  container.innerHTML = all.map(item => {
+    const on = interests.find(i => i.label === item.label) ? 'on' : '';
+    const delBtn = item.custom
+      ? `<span class="del" onclick="removeInterest('${item.label.replace(/'/g,"\\'")}');event.stopPropagation()">✕</span>`
+      : '';
+    return `<div class="interest-chip ${on}" onclick="toggleInterest('${item.label.replace(/'/g,"\\'")}','${item.emoji}')">
+      ${item.emoji} ${item.label}${delBtn}
+    </div>`;
+  }).join('');
+}
+
+function toggleInterest(label, emoji) {
+  const idx = interests.findIndex(i => i.label === label);
+  if (idx !== -1) interests.splice(idx, 1);
+  else interests.push({ label, emoji });
+  saveInterests();
+  renderInterestChips();
+}
+
+function addCustomInterest() {
+  const input = document.getElementById('customInterest');
+  const val = input.value.trim();
+  if (!val) return;
+  if (!interests.find(i => i.label === val)) {
+    interests.push({ label: val, emoji: '📌' });
+    saveInterests();
+  }
+  input.value = '';
+  renderInterestChips();
+}
+
+function removeInterest(label) {
+  interests = interests.filter(i => i.label !== label);
+  saveInterests();
+  renderInterestChips();
+}
+
+function getActiveInterests() {
+  return interests.map(i => `${i.emoji} ${i.label}`).join(', ');
+}
+
+renderInterestChips();
+
+// ── VOCAB ──
+function renderVocabStats() {
+  const learned = vocab.filter(v => v.learned).length;
+  document.getElementById('vocabTotal').textContent = vocab.length;
+  document.getElementById('vocabLearned').textContent = learned;
+  document.getElementById('vocabStreak').textContent = vocabStreak;
+  renderVocabList(); showNextCard();
+}
+function renderVocabList() {
+  const wrap = document.getElementById('vocabListWrap');
+  if (vocab.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  document.getElementById('vocabList').innerHTML = vocab.map((v, i) => `
+    <div class="vocab-item">
+      <div><div class="word">${escHtml(v.word)}</div><div class="translation">${escHtml(v.translation)}</div></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--text-muted)" onclick="speak('${v.word.replace(/'/g,"\\'")}')">🔊</button>
+        <button class="del-btn" onclick="deleteVocab(${i})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+function showNextCard() {
+  const card = document.getElementById('flashcard');
+  const actions = document.getElementById('vocabActions');
+  const voiceArea = document.getElementById('vocabVoiceArea');
+  const notLearned = vocab.filter(v => !v.learned);
+  resetVocabVoice();
+  if (vocab.length === 0) {
+    card.innerHTML = '<div class="tap-hint">Add vocabulary below to start</div>';
+    actions.style.display = 'none';
+    voiceArea.style.display = 'none';
+    cardFlipped = false; return;
+  }
+  if (notLearned.length === 0) {
+    card.innerHTML = '<div style="font-size:28px">🎉</div><div class="front-word">All done!</div><div class="tap-hint">Add more words below!</div>';
+    actions.style.display = 'none';
+    voiceArea.style.display = 'none';
+    return;
+  }
+  currentCardIdx = vocab.indexOf(notLearned[Math.floor(Math.random() * notLearned.length)]);
+  card.innerHTML = `<div class="front-word">${escHtml(vocab[currentCardIdx].word)}</div><div class="tap-hint">Tap to reveal — or speak below</div>`;
+  cardFlipped = false;
+  actions.style.display = 'none';
+  voiceArea.style.display = 'flex';
+}
+
+function flipCard() {
+  if (vocab.length === 0) return;
+  const v = vocab[currentCardIdx];
+  if (!v || cardFlipped) return;
+  document.getElementById('flashcard').innerHTML = `
+    <div class="front-word">${escHtml(v.word)}</div>
+    <div class="back-word">${escHtml(v.translation)}</div>
+    ${v.example ? `<div class="example">"${escHtml(v.example)}"</div>` : ''}`;
+  cardFlipped = true;
+  document.getElementById('vocabActions').style.display = 'flex';
+  document.getElementById('vocabVoiceArea').style.display = 'none';
+  updateEasyBtn();
+  speak(v.word);
+  setTimeout(() => speakDE(v.translation), 1000);
+}
+
+function markCard(easy) {
+  stopVocabMic();
+  const v = vocab[currentCardIdx];
+  if (easy) {
+    v.correct = (v.correct || 0) + 1;
+    vocabStreak++;
+    if (v.correct >= 3) v.learned = true;
+  } else {
+    v.correct = 0;
+    vocabStreak = 0;
+  }
+  localStorage.setItem('vocab', JSON.stringify(vocab));
+  localStorage.setItem('vocabStreak', vocabStreak);
+  renderVocabStats();
+}
+
+function updateEasyBtn() {
+  const v = vocab[currentCardIdx];
+  const btn = document.querySelector('#vocabActions .btn.success');
+  if (!btn || !v) return;
+  const c = v.correct || 0;
+  if (c === 0) { btn.textContent = '✓ Correct'; btn.style.background = ''; return; }
+  const colors = ['', '#0369a1', '#0f766e', '#15803d'];
+  btn.textContent = `✓ Correct (${c}/3)`;
+  btn.style.background = colors[Math.min(c, 3)];
+}
+
+// ── VOCAB VOICE ──
+
+function resetVocabVoice() {
+  stopVocabMic();
+  const fb = document.getElementById('vocabVoiceFeedback');
+  const st = document.getElementById('vocabVoiceStatus');
+  if (fb) { fb.style.display = 'none'; fb.textContent = ''; }
+  if (st) st.textContent = '';
+  const btn = document.getElementById('vocabMicBtn');
+  if (btn) { btn.textContent = '🎤 Speak German translation'; btn.style.borderColor = ''; btn.style.color = ''; }
+}
+
+function toggleVocabMic() {
+  if (isVocabRecording) { stopVocabMic(); return; }
+  if (isIOS || !SR) { showIOSHint('vocab'); return; }
+  resetVocabVoice();
+  isVocabRecording = true;
+  const btn = document.getElementById('vocabMicBtn');
+  btn.textContent = '⏹ Stop';
+  btn.style.borderColor = 'var(--danger)';
+  btn.style.color = 'var(--danger)';
+  document.getElementById('vocabVoiceStatus').textContent = 'Listening…';
+
+  vocabRecognition = new SR();
+  vocabRecognition.lang = 'de-DE';
+  vocabRecognition.continuous = false;
+  vocabRecognition.interimResults = true;
+
+  vocabRecognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if (interim) document.getElementById('vocabVoiceStatus').textContent = '🎤 ' + interim + '…';
+    if (final) { stopVocabMic(); checkVocabAnswer(final); }
+  };
+  vocabRecognition.onerror = (e) => {
+    stopVocabMic();
+    document.getElementById('vocabVoiceStatus').textContent =
+      e.error === 'no-speech' ? 'Nothing heard — please try again.' : 'Error: ' + e.error;
+  };
+  vocabRecognition.onend = () => { if (isVocabRecording) stopVocabMic(); };
+
+  try { vocabRecognition.start(); } catch(e) { stopVocabMic(); }
+}
+
+function stopVocabMic() {
+  isVocabRecording = false;
+  if (vocabRecognition) { try { vocabRecognition.abort(); } catch(e) {} vocabRecognition = null; }
+  const btn = document.getElementById('vocabMicBtn');
+  if (btn && btn.textContent.includes('Stop')) {
+    btn.textContent = '🎤 Speak German translation';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }
+}
+
+function checkVocabAnswer(spoken) {
+  const v = vocab[currentCardIdx];
+  if (!v) return;
+  const spokenClean = spoken.trim().toLowerCase().replace(/[.,!?]/g, '');
+  const targetClean = v.translation.toLowerCase().replace(/[.,!?]/g, '');
+  const dist = levenshtein(spokenClean, targetClean);
+  const maxDist = Math.max(2, Math.floor(targetClean.length * 0.25));
+  const correct = dist <= maxDist;
+
+  document.getElementById('vocabVoiceStatus').textContent = '🗣 "' + spoken + '"';
+
+  const fb = document.getElementById('vocabVoiceFeedback');
+  fb.style.display = 'block';
+
+  if (correct) {
+    const nextCount = (v.correct || 0) + 1;
+    const countLabel = nextCount >= 3 ? '🎉 Gelernt!' : `${nextCount}/3 ✓`;
+    fb.style.background = '#064E3B55';
+    fb.style.color = '#34D399';
+    fb.style.border = '1px solid #10B98155';
+    fb.innerHTML = `✓ Richtig! <span style="font-weight:400">${escHtml(v.translation)}</span> <span style="font-size:12px;opacity:0.8">${countLabel}</span>`;
+    speak('Correct!'); setTimeout(() => speakDE(v.translation), 700);
+    setTimeout(() => markCard(true), 1400);
+  } else {
+    fb.style.background = '#450A0A55';
+    fb.style.color = '#FCA5A5';
+    fb.style.border = '1px solid #EF444455';
+    fb.innerHTML = '✗ Nicht ganz — die Antwort ist: <span style="color:white;font-weight:700">' + escHtml(v.translation) + '</span>';
+    speak('Not quite. The answer is:'); setTimeout(() => speakDE(v.translation), 900);
+    document.getElementById('vocabActions').style.display = 'flex';
+    document.getElementById('vocabVoiceArea').style.display = 'none';
+  }
+}
+function addVocab() {
+  const word = document.getElementById('newWord').value.trim();
+  const translation = document.getElementById('newTranslation').value.trim();
+  if (!word || !translation) return;
+  vocab.push({ word, translation, learned: false });
+  localStorage.setItem('vocab', JSON.stringify(vocab));
+  document.getElementById('newWord').value = '';
+  document.getElementById('newTranslation').value = '';
+  renderVocabStats();
+}
+function deleteVocab(i) {
+  vocab.splice(i, 1);
+  localStorage.setItem('vocab', JSON.stringify(vocab));
+  renderVocabStats();
+}
+async function generateVocab() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '⏳ Generating...';
+  try {
+    const existing = vocab.map(v => v.word).join(', ');
+    const activeInterests = getActiveInterests();
+    const topicHint = activeInterests
+      ? `Focus on vocabulary related to these topics: ${activeInterests}.`
+      : '';
+    const avoidHint = existing ? ` Avoid these already-known words: ${existing}.` : '';
+    const prompt = `Give me 5 useful English words or phrases for an intermediate learner. ${topicHint}${avoidHint} Give the German translation for each. Return ONLY a JSON array: [{"word":"(English)","translation":"(Deutsch)","example":"(English example sentence)"}]`;
+    const reply = await callAI([{ role: 'user', content: prompt }], 300);
+    JSON.parse(extractJSON(reply, 'array')).forEach(w => vocab.push({ word: w.word, translation: w.translation, example: w.example, learned: false }));
+    localStorage.setItem('vocab', JSON.stringify(vocab));
+    renderVocabStats();
+  } catch(e) { alert('Error: ' + e.message); }
+  btn.disabled = false; btn.textContent = '✨ AI: Suggest 5 words';
+}
+
+// ── GRAMMAR ──
+const grammarTopics = {
+  tenses:       { label: '⏰ Tenses',                desc: 'English tenses (present simple, past simple, present perfect, past perfect, future will/going to)' },
+  articles:     { label: '📝 Articles',              desc: 'English articles (a, an, the, or zero article)' },
+  prepositions: { label: '📍 Prepositions',          desc: 'English prepositions of time and place (in, on, at, by, for, with, to, from, since, until)' },
+  modal:        { label: '🔧 Modal Verbs',           desc: 'English modal verbs (can, could, must, should, would, may, might, have to, need to, ought to)' },
+  conditionals: { label: '🔀 Conditionals',          desc: 'English conditional sentences (zero, first, second and third conditional; mixed conditionals)' },
+  passive:      { label: '🔄 Passive Voice',         desc: 'English passive voice (present simple, past simple, present perfect, future passive)' },
+  reported:     { label: '💬 Reported Speech',       desc: 'English reported/indirect speech (statements, questions, commands; tense backshift)' },
+  phrasal:      { label: '🚀 Phrasal Verbs',         desc: 'Common English phrasal verbs (look up, give up, carry on, find out, take off, put off, get on, turn down)' },
+  relative:     { label: '🔗 Relative Clauses',      desc: 'English relative clauses with who, which, that, whose, where, when (defining and non-defining)' },
+  gerund:       { label: '🔤 Gerund vs. Infinitive', desc: 'Gerund vs. infinitive (enjoy doing, want to do, stop doing/to do, remember doing/to do)' },
+  quantifiers:  { label: '🔢 Quantifiers',           desc: 'Quantifiers with countable/uncountable nouns (some, any, much, many, a lot of, a few, a little, enough)' },
+  comparatives: { label: '📊 Comparatives',          desc: 'Comparatives and superlatives (bigger, the biggest, more interesting, as … as, the more … the more)' },
+  questionTags: { label: '❓ Question Tags',         desc: "Question tags (isn't it?, don't you?, haven't they?, won't she?, did they?) — form and use" },
+  conjunctions: { label: '🔁 Conjunctions',          desc: 'Linking words and conjunctions (although, however, therefore, despite, in spite of, whereas, nevertheless, furthermore)' },
+  futureforms:  { label: '🔭 Future Forms',          desc: 'All future forms (will, going to, present continuous for future, future perfect, future continuous)' },
+  pasthabits:   { label: '📼 Past Habits',           desc: 'Expressing past habits and states (used to, would, be used to, get used to)' },
+  verbpatterns: { label: '🎯 Verb Patterns',         desc: 'Verb + -ing or infinitive with meaning change (stop, remember, forget, try, go on, regret, mean)' },
+  wordorder:    { label: '📐 Word Order',            desc: 'English word order, inversion after negative adverbs (never, rarely, hardly), fronting, emphasis' },
+  determiners:  { label: '🔵 Determiners',           desc: 'Determiners and pronouns (each, every, both, either, neither, all, none, another, other, the other)' },
+  idioms:       { label: '🎭 Idioms',                desc: 'Common English idioms and fixed expressions (under the weather, break the ice, hit the nail on the head, etc.)' },
+};
+
+async function startGrammar(topic) {
+  grammarTopic = topic; grammarIdx = 0; grammarCorrect = 0; grammarQuestions = [];
+  const area = document.getElementById('grammarArea');
+  area.innerHTML = '<div style="text-align:center;padding:30px"><div class="spinner"></div><div style="margin-top:12px;color:var(--text-muted)">Creating new questions...</div></div>';
+  const seed = Math.floor(Math.random() * 99999);
+  const avoidHint = usedQuestions[topic].length > 0
+    ? `\nDo NOT reuse any of these sentences: ${usedQuestions[topic].slice(-10).join(' | ')}` : '';
+  try {
+    const reply = await callAI([{ role: 'user', content: `Create 5 fresh multiple-choice grammar questions about ${grammarTopics[topic].desc} for an intermediate English learner. Use varied, real-life scenarios. (seed:${seed})${avoidHint}
+Return ONLY a valid JSON array, nothing else:
+[{"question":"Fill in: She ___ to work every day.","options":["go","goes","going","gone"],"correct":1,"explanation":"With 'she/he/it' in present simple, the verb takes -s: 'She goes to work every day.'"}]` }], 900);
+    grammarQuestions = JSON.parse(extractJSON(reply, 'array'));
+    usedQuestions[topic].push(...grammarQuestions.map(q => q.question));
+    showGrammarQuestion();
+  } catch(e) {
+    area.innerHTML = `<div class="card" style="color:var(--danger)">Error: ${escHtml(e.message)}<br><br><button class="btn secondary" onclick="startGrammar('${topic}')">Retry</button></div>`;
+  }
+}
+
+function showGrammarQuestion() {
+  const area = document.getElementById('grammarArea');
+  const total = grammarQuestions.length;
+  document.getElementById('grammarScore').textContent = `${grammarCorrect} / ${grammarIdx}`;
+  document.getElementById('grammarProgress').style.width = `${(grammarIdx / total) * 100}%`;
+  if (grammarIdx >= total) {
+    const pct = Math.round((grammarCorrect / total) * 100);
+    area.innerHTML = `
+      <div class="card" style="text-align:center;padding:30px;gap:12px;display:flex;flex-direction:column">
+        <div style="font-size:40px">${pct >= 80 ? '🎉' : pct >= 50 ? '👍' : '📚'}</div>
+        <div style="font-size:22px;font-weight:700">${pct}%</div>
+        <div style="color:var(--text-muted)">${grammarCorrect} of ${total} correct</div>
+        <button class="btn" onclick="startGrammar('${grammarTopic}')">New quiz — same topic</button>
+        <button class="btn secondary" onclick="showTopicSelect()">Choose a different topic</button>
+      </div>`;
+    return;
+  }
+  const q = grammarQuestions[grammarIdx];
+  area.innerHTML = `
+    <div class="card" style="gap:12px;display:flex;flex-direction:column">
+      <div style="font-size:12px;color:var(--text-muted)">Question ${grammarIdx + 1} of ${total}</div>
+      <div class="quiz-question">${escHtml(q.question)}</div>
+      <div class="options">${q.options.map((opt, i) => `<button class="option-btn" onclick="answerGrammar(${i})">${escHtml(opt)}</button>`).join('')}</div>
+    </div>`;
+  if (ttsEnabled) speak(q.question.replace(/_+/g, 'blank'));
+}
+
+function renderTopicGrid(containerId, fillMode = false) {
+  const grid = document.getElementById(containerId);
+  if (!grid) return;
+  const fn = fillMode ? 'startFill' : 'startGrammar';
+  grid.innerHTML = Object.entries(grammarTopics).map(([key, t]) => `
+    <button class="btn secondary" onclick="${fn}('${key}')"
+      style="font-size:13px;padding:12px 8px;min-height:52px;text-align:center;line-height:1.3">
+      ${t.label}
+    </button>`).join('');
+}
+
+function switchGrammarMode(mode) {
+  const quizPanel = document.getElementById('grammarQuizPanel');
+  const fillPanel = document.getElementById('grammarFillPanel');
+  document.getElementById('modeQuizBtn').classList.toggle('active', mode === 'quiz');
+  document.getElementById('modeFillBtn').classList.toggle('active', mode === 'fill');
+  quizPanel.style.display = mode === 'quiz' ? 'flex' : 'none';
+  quizPanel.style.flexDirection = 'column';
+  quizPanel.style.gap = '12px';
+  fillPanel.style.display = mode === 'fill' ? 'flex' : 'none';
+}
+
+function showTopicSelect() {
+  document.getElementById('grammarArea').innerHTML = `
+    <div class="card" style="padding:20px">
+      <div style="font-size:28px;text-align:center;margin-bottom:8px">📚</div>
+      <div style="text-align:center;margin-bottom:14px;color:var(--text-muted);font-size:14px">Choose a topic</div>
+      <div id="topicGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    </div>`;
+  renderTopicGrid('topicGrid');
+}
+
+// ── FILL-IN-TEXT ──
+let fillBlanks = [];
+let fillAnswers = [];
+let fillTopic = '';
+
+async function startFill(topic) {
+  fillTopic = topic;
+  fillBlanks = [];
+  fillAnswers = [];
+  const area = document.getElementById('fillArea');
+  area.innerHTML = '<div style="text-align:center;padding:30px"><div class="spinner"></div><div style="margin-top:12px;color:var(--text-muted)">Generating text…</div></div>';
+  const seed = Math.floor(Math.random() * 99999);
+  try {
+    const reply = await callAI([{ role: 'user', content:
+      `Create a fill-in-the-blank exercise for an intermediate English learner about ${grammarTopics[topic].desc}.
+Write 3–5 natural sentences. Replace exactly 5 words/phrases with ___. For each blank provide 3 options (only 1 correct).
+Return ONLY valid JSON, no extra text:
+{"text":"She ___ to work every day. It ___ raining when she arrived.","blanks":[{"options":["travels","travel","travelling"],"correct":0,"explanation":"Third person singular present simple needs -s."},{"options":["was","is","were"],"correct":0,"explanation":"Past continuous: 'was raining' describes ongoing action in the past."}]}
+(seed:${seed})`
+    }], 900);
+    const data = JSON.parse(extractJSON(reply, 'object'));
+    if (!data.text || !data.blanks?.length) throw new Error('Invalid response');
+    fillBlanks = data.blanks;
+    fillAnswers = new Array(fillBlanks.length).fill(null);
+    renderFillExercise(data.text);
+  } catch(e) {
+    area.innerHTML = `<div class="card" style="color:var(--danger)">Error: ${escHtml(e.message)}<br><br>
+      <button class="btn secondary" onclick="startFill('${topic}')">Retry</button></div>`;
+  }
+}
+
+function renderFillExercise(text) {
+  const parts = text.split('___');
+  let html = '<div class="fill-text">';
+  parts.forEach((part, i) => {
+    html += escHtml(part);
+    if (i < fillBlanks.length) {
+      const b = fillBlanks[i];
+      html += `<span class="blank-group" id="blank-${i}">`;
+      b.options.forEach((opt, j) => {
+        html += `<button class="blank-opt" id="bopt-${i}-${j}" onclick="selectBlankOpt(${i},${j})">${escHtml(opt)}</button>`;
+      });
+      html += '</span>';
+    }
+  });
+  html += '</div>';
+  html += `<button class="btn" id="fillSubmitBtn" onclick="checkFill()" disabled style="margin-top:4px">Check answers</button>`;
+  html += `<button class="btn secondary" onclick="startFill('${fillTopic}')" style="margin-top:0">🔄 New text</button>`;
+  html += `<button class="btn secondary" onclick="showFillTopicSelect()" style="margin-top:0">← Topics</button>`;
+  document.getElementById('fillArea').innerHTML = `<div class="card" style="display:flex;flex-direction:column;gap:12px">${html}</div>`;
+}
+
+function selectBlankOpt(blankIdx, optIdx) {
+  // Deselect others in this blank
+  fillBlanks[blankIdx].options.forEach((_, j) => {
+    document.getElementById(`bopt-${blankIdx}-${j}`)?.classList.remove('selected');
+  });
+  document.getElementById(`bopt-${blankIdx}-${optIdx}`).classList.add('selected');
+  fillAnswers[blankIdx] = optIdx;
+  // Enable submit when all blanks answered
+  if (fillAnswers.every(a => a !== null)) {
+    document.getElementById('fillSubmitBtn').disabled = false;
+  }
+}
+
+function checkFill() {
+  document.getElementById('fillSubmitBtn').disabled = true;
+  let correct = 0;
+  const explanations = [];
+  fillBlanks.forEach((b, i) => {
+    const chosen = fillAnswers[i];
+    b.options.forEach((_, j) => {
+      const btn = document.getElementById(`bopt-${i}-${j}`);
+      if (!btn) return;
+      btn.disabled = true;
+      btn.classList.remove('selected');
+      if (j === b.correct) btn.classList.add('correct');
+      else if (j === chosen && chosen !== b.correct) btn.classList.add('wrong');
+    });
+    if (chosen === b.correct) correct++;
+    else explanations.push(`<b>${b.options[b.correct]}</b>: ${b.explanation}`);
+  });
+
+  const pct = Math.round((correct / fillBlanks.length) * 100);
+  const icon = pct === 100 ? '🎉' : pct >= 60 ? '👍' : '📚';
+  let resultHtml = `<div style="text-align:center;padding:8px 0">
+    <div style="font-size:32px">${icon}</div>
+    <div style="font-size:20px;font-weight:700;margin:6px 0">${correct}/${fillBlanks.length} correct — ${pct}%</div>
+  </div>`;
+  if (explanations.length) {
+    resultHtml += `<div class="explanation">${explanations.join('<br><br>')}</div>`;
+    if (ttsEnabled) speak(explanations.map(e => e.replace(/<[^>]+>/g,'')).join('. '));
+  } else {
+    if (ttsEnabled) speak('Perfect! All answers correct!');
+  }
+  resultHtml += `<button class="btn" onclick="startFill('${fillTopic}')">🔄 New text — same topic</button>`;
+  resultHtml += `<button class="btn secondary" onclick="showFillTopicSelect()">← Choose topic</button>`;
+  document.getElementById('fillArea').querySelector('.card').innerHTML += resultHtml;
+}
+
+function showFillTopicSelect() {
+  document.getElementById('fillArea').innerHTML = `
+    <div class="card" style="padding:20px">
+      <div style="font-size:28px;text-align:center;margin-bottom:8px">📄</div>
+      <div style="text-align:center;margin-bottom:14px;color:var(--text-muted);font-size:14px">Choose a topic for your text</div>
+      <div id="fillTopicGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    </div>`;
+  renderTopicGrid('fillTopicGrid', true);
+}
+
+function answerGrammar(chosen) {
+  const q = grammarQuestions[grammarIdx];
+  const buttons = document.querySelectorAll('.option-btn');
+  buttons.forEach(b => b.disabled = true);
+  buttons[q.correct].classList.add('correct');
+  if (chosen !== q.correct) buttons[chosen].classList.add('wrong');
+  else grammarCorrect++;
+  const nextLabel = grammarIdx + 1 >= grammarQuestions.length ? 'See Results →' : 'Next →';
+  document.querySelector('#grammarArea .card').innerHTML += `
+    <div class="explanation">${escHtml(q.explanation)}</div>
+    <button class="btn" onclick="grammarIdx++;showGrammarQuestion()" style="margin-top:4px">${nextLabel}</button>`;
+  if (ttsEnabled) speak(q.explanation);
+}
+
+// ── SPEECH RECOGNITION ──
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+function showIOSHint(context) {
+  const msg = '🍎 iPhone: Mikrofon-Taste auf der Tastatur tippen (🎤) zum Diktieren — dann Text absenden.';
+  if (context === 'chat') {
+    const msgs = document.getElementById('chat-messages');
+    const w = document.createElement('div');
+    w.className = 'msg-wrap bot-wrap';
+    w.innerHTML = `<div class="msg bot" style="background:#1e1b4b;border:1px solid #4F46E5;font-size:13px">${escHtml(msg)}</div>`;
+    msgs.appendChild(w);
+    msgs.scrollTop = msgs.scrollHeight;
+  } else if (context === 'speak') {
+    document.getElementById('micStatus').textContent = '';
+    const hint = document.getElementById('micHint');
+    hint.style.display = 'block';
+    hint.innerHTML = '🍎 <b>iPhone:</b> Spracheingabe wird von iOS nicht unterstützt.<br>Die anderen Funktionen (Hören, Grammar, Vocab) funktionieren normal.';
+  } else if (context === 'vocab') {
+    document.getElementById('vocabVoiceStatus').textContent = '';
+    const fb = document.getElementById('vocabVoiceFeedback');
+    fb.style.display = 'block';
+    fb.style.background = '#1e1b4b';
+    fb.style.color = '#818CF8';
+    fb.style.border = '1px solid #4F46E5';
+    fb.style.fontWeight = '400';
+    fb.innerHTML = '🍎 <b>iPhone:</b> Spracheingabe wird von iOS nicht unterstützt.<br>Tippe auf <b>👁 Show answer</b> um die Karte aufzudecken.';
+  }
+}
+
+function showMicError(context) {
+  const msg = 'Speech recognition is not supported in this browser. Please use Chrome or Edge.';
+  if (context === 'chat') {
+    const msgs = document.getElementById('chat-messages');
+    const w = document.createElement('div'); w.className = 'msg-wrap bot-wrap';
+    w.innerHTML = `<div class="msg bot" style="color:var(--danger)">${msg}</div>`;
+    msgs.appendChild(w); msgs.scrollTop = msgs.scrollHeight;
+  } else {
+    document.getElementById('micStatus').textContent = msg;
+    document.getElementById('micHint').style.display = 'block';
+    document.getElementById('micHint').textContent = msg;
+  }
+}
+
+function setPronError(code, extra) {
+  const map = {
+    'not-allowed':   'Microphone blocked. Click the 🔒 icon in your browser address bar and allow the microphone.',
+    'no-speech':     'No speech detected — please try again.',
+    'network':       'Network error: speech recognition needs internet access (Google Speech API).',
+    'audio-capture': 'No microphone found — please connect one.',
+    'service-not-allowed': 'Speech service not allowed. Try opening this file via localhost instead of file://',
+    'aborted':       '',
+  };
+  const text = map[code] || ('Error: ' + code + (extra ? ' — ' + extra : ''));
+  if (!text) return;
+  const hint = document.getElementById('micHint');
+  hint.style.display = 'block';
+  hint.textContent = text;
+  document.getElementById('micStatus').textContent = 'Tap to try again';
+}
+
+function initSpeechRecognition() {
+  // Chat recognition — rebuilt each use (see toggleChatMic)
+  // Pron recognition — rebuilt each use (see toggleRecording)
+}
+
+// ── PRONUNCIATION ──
+function newPronSentence() {
+  const prev = currentPronSentence;
+  do { currentPronSentence = pronSentences[Math.floor(Math.random() * pronSentences.length)]; }
+  while (currentPronSentence === prev && pronSentences.length > 1);
+  renderSentenceSpans();
+  document.getElementById('pronResult').style.display = 'none';
+  document.getElementById('micHint').style.display = 'none';
+  document.getElementById('wordDiff').style.display = 'none';
+}
+
+function renderSentenceSpans() {
+  const el = document.getElementById('pronSentence');
+  el.innerHTML = currentPronSentence
+    .split(/(\s+)/)
+    .map(tok => /\S/.test(tok)
+      ? `<span class="pw" data-w="${normalise(tok)}">${escHtml(tok)}</span>`
+      : tok)
+    .join('');
+}
+
+function resetSentenceSpans() {
+  document.querySelectorAll('.pw').forEach(s => s.className = 'pw');
+}
+
+function highlightLive(spokenText) {
+  const sWords = normalise(spokenText).split(/\s+/).filter(Boolean);
+  const spans = Array.from(document.querySelectorAll('.pw'));
+  let si = 0;
+  for (let ti = 0; ti < spans.length; ti++) {
+    const span = spans[ti];
+    const tw = span.dataset.w;
+    span.className = 'pw';
+    if (si < sWords.length && levenshtein(sWords[si], tw) <= Math.max(1, Math.floor(tw.length / 4))) {
+      span.classList.add('pw-live');
+      si++;
+    }
+  }
+  // Highlight the next expected word
+  const next = spans.find(s => !s.classList.contains('pw-live'));
+  if (next) next.classList.add('pw-current');
+}
+
+function applyFinalSpanColors(transcript) {
+  const sWords = normalise(transcript).split(/\s+/).filter(Boolean);
+  const spans = Array.from(document.querySelectorAll('.pw'));
+  const matched = new Array(sWords.length).fill(false);
+  let si = 0;
+  for (const span of spans) {
+    const tw = span.dataset.w;
+    span.className = 'pw';
+    let found = -1;
+    for (let k = si; k < Math.min(si + 4, sWords.length); k++) {
+      if (!matched[k] && levenshtein(sWords[k], tw) <= Math.max(1, Math.floor(tw.length / 4))) {
+        found = k; break;
+      }
+    }
+    if (found !== -1) { matched[found] = true; si = found + 1; span.classList.add('pw-ok'); }
+    else span.classList.add('pw-err');
+  }
+}
+
+async function toggleRecording() {
+  if (isRecording) {
+    if (pronRecognition) pronRecognition.abort();
+    stopPronRecording(); return;
+  }
+  if (isIOS || !SR) { showIOSHint('speak'); return; }
+
+  speechSynthesis.cancel();
+  isRecording = true; lastInterim = '';
+  document.getElementById('micBtn').classList.add('recording');
+  document.getElementById('micBtn').textContent = '⏹';
+  document.getElementById('micStatus').textContent = 'Listening — speak now!';
+  document.getElementById('pronResult').style.display = 'none';
+  document.getElementById('micHint').style.display = 'none';
+  startVisualizer().catch(() => {});
+
+  pronRecognition = new SR();
+  pronRecognition.lang = 'en-US';
+  pronRecognition.continuous = false;
+  pronRecognition.interimResults = true;
+
+  pronRecognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if (interim) {
+      lastInterim = interim;
+      document.getElementById('micStatus').textContent = interim;
+      highlightLive(interim);
+    }
+    if (final) { lastInterim = ''; stopPronRecording(); evaluatePronunciation(final); }
+  };
+  pronRecognition.onerror = (e) => { stopPronRecording(); setPronError(e.error); };
+  pronRecognition.onend   = () => {
+    if (lastInterim) { const t = lastInterim; lastInterim = ''; stopPronRecording(); evaluatePronunciation(t); }
+    else if (isRecording) stopPronRecording();
+  };
+
+  try { pronRecognition.start(); }
+  catch(e) { stopPronRecording(); setPronError('start-failed', e.message); }
+}
+
+function stopPronRecording() {
+  isRecording = false; stopVisualizer();
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micBtn').textContent = '🎤';
+  document.getElementById('micStatus').textContent = 'Tap to start speaking';
+  resetSentenceSpans();
+}
+
+// ── WORD DIFF ──
+function normalise(str) {
+  return str.toLowerCase().replace(/[^a-z\s']/g, '').trim();
+}
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, (_, i) => Array.from({length: n+1}, (_, j) => i ? (j ? 0 : i) : j));
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+    dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function buildWordDiff(target, spoken) {
+  const tWords = normalise(target).split(/\s+/);
+  const sWords = normalise(spoken).split(/\s+/);
+  const tOrig  = target.replace(/[.,!?;:]/g, '').split(/\s+/);
+
+  // Greedy LCS matching
+  const matched = new Array(sWords.length).fill(false);
+  const result = [];
+  let si = 0;
+  for (let ti = 0; ti < tWords.length; ti++) {
+    let found = -1;
+    for (let k = si; k < Math.min(si + 4, sWords.length); k++) {
+      if (!matched[k] && (sWords[k] === tWords[ti] || levenshtein(sWords[k], tWords[ti]) <= 1)) {
+        found = k; break;
+      }
+    }
+    if (found !== -1) {
+      matched[found] = true;
+      result.push(`<span class="wd wd-ok">${escHtml(tOrig[ti])}</span>`);
+      si = found + 1;
+    } else {
+      result.push(`<span class="wd wd-err">${escHtml(tOrig[ti])}</span>`);
+    }
+  }
+  // Extra spoken words not in target
+  sWords.forEach((w, i) => {
+    if (!matched[i]) result.push(`<span class="wd wd-extra">${escHtml(w)}</span>`);
+  });
+  return result.join(' ');
+}
+
+async function evaluatePronunciation(transcript) {
+  const result = document.getElementById('pronResult');
+  result.style.display = 'flex'; result.style.flexDirection = 'column'; result.style.gap = '14px';
+  document.getElementById('pronFeedback').textContent = '⏳ Evaluating...';
+  document.getElementById('pronTranscript').textContent = '🗣 You said: "' + transcript + '"';
+  document.getElementById('scoreNum').textContent = '...';
+  document.getElementById('scoreRing').style.background = `conic-gradient(var(--text-muted) 50%, var(--surface2) 0%)`;
+  document.getElementById('wordDiff').style.display = 'none';
+
+  // Color the sentence spans immediately
+  applyFinalSpanColors(transcript);
+
+  // Show word diff immediately (no API needed)
+  const diffEl = document.getElementById('wordDiff');
+  diffEl.innerHTML = '<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Word check</div>' + buildWordDiff(currentPronSentence, transcript);
+  diffEl.style.display = 'block';
+
+  try {
+    const reply = await callAI([{ role: 'user', content: `The student should say: "${currentPronSentence}"\nThey said: "${transcript}"\n\nGive:\n1) score 0–100 (how accurately they said the sentence)\n2) 2 sentences of specific, encouraging spoken feedback\n3) The most important thing they should practise\n\nRespond ONLY with this JSON:\n{"score":85,"feedback":"Great effort! Your rhythm was natural and most words were clear.","tip":"Focus on the word \\"seashells\\" — try stressing the first syllable: SEA-shells."}` }], 300);
+    const data = JSON.parse(extractJSON(reply, 'object'));
+    const score = Math.min(100, Math.max(0, parseInt(data.score) || 0));
+    document.getElementById('scoreNum').textContent = score + '%';
+    const color = score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444';
+    document.getElementById('scoreRing').style.background = `conic-gradient(${color} ${score}%, var(--surface2) 0%)`;
+    document.getElementById('scoreNum').style.color = color;
+    document.getElementById('pronFeedback').textContent = data.feedback || '';
+    const tipText = data.tip || data.issues || '';
+    document.getElementById('pronTranscript').innerHTML =
+      '🗣 You said: "' + escHtml(transcript) + '"' + (tipText ? '<br><br>💡 ' + escHtml(tipText) : '');
+    if (ttsEnabled && data.feedback) speak(data.feedback + (data.tip ? ' ' + data.tip : ''));
+  } catch(e) {
+    document.getElementById('pronFeedback').textContent = 'Could not evaluate — please try again.';
+    document.getElementById('scoreNum').textContent = '?';
+  }
+}
+
+// ── AUDIO VISUALIZER ──
+function initVizCanvas() {
+  const canvas = document.getElementById('vizCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = (canvas.offsetWidth || 300) * dpr;
+  canvas.height = 64 * dpr;
+  drawIdleViz();
+}
+
+function drawIdleViz() {
+  const canvas = document.getElementById('vizCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const n = 32, bw = canvas.width / n - 2;
+  for (let i = 0; i < n; i++) {
+    const h = (Math.sin(i * 0.4) * 0.15 + 0.18) * canvas.height;
+    ctx.fillStyle = 'rgba(79,70,229,0.22)';
+    ctx.beginPath();
+    ctx.roundRect(i * (bw + 2), (canvas.height - h) / 2, bw, h, 3);
+    ctx.fill();
+  }
+}
+
+async function startVisualizer() {
+  if (mediaStream) return;
+  mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 64; analyser.smoothingTimeConstant = 0.75;
+  audioCtx.createMediaStreamSource(mediaStream).connect(analyser);
+  const canvas = document.getElementById('vizCanvas');
+  const ctx = canvas.getContext('2d');
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  const bw = canvas.width / data.length - 1.5;
+  const draw = () => {
+    vizAnimFrame = requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(data);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < data.length; i++) {
+      const v = data[i] / 255;
+      const h = Math.max(4, v * canvas.height);
+      ctx.fillStyle = `hsla(${240 + v * 60}, 80%, 65%, ${0.45 + v * 0.55})`;
+      ctx.beginPath();
+      ctx.roundRect(i * (bw + 1.5), (canvas.height - h) / 2, bw, h, 3);
+      ctx.fill();
+    }
+  };
+  draw();
+}
+
+function stopVisualizer() {
+  if (vizAnimFrame) { cancelAnimationFrame(vizAnimFrame); vizAnimFrame = null; }
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  analyser = null;
+  drawIdleViz();
+}
+
+// ── UTILS ──
+// ── KEYBOARD & PWA ──
+let pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pwaPrompt = e; showInstallBanner(); });
+
+function showInstallBanner() {
+  if (document.getElementById('installBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'installBanner';
+  b.style.cssText = 'position:fixed;bottom:72px;left:12px;right:12px;z-index:200;background:#1e1b4b;border:1px solid var(--primary-light);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,0.5)';
+  b.innerHTML = `<span>📲 <b>Als App installieren</b> — kein Browser nötig!</span>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button onclick="installPWA()" style="background:var(--primary);color:white;border:none;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer;font-size:13px">Installieren</button>
+      <button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:0 4px">✕</button>
+    </div>`;
+  document.body.appendChild(b);
+}
+
+async function installPWA() {
+  if (!pwaPrompt) return;
+  pwaPrompt.prompt();
+  await pwaPrompt.userChoice;
+  pwaPrompt = null;
+  const b = document.getElementById('installBanner');
+  if (b) b.remove();
+}
+
+function initKeyboardHandling() {
+  if (!window.visualViewport) return;
+  const nav = document.querySelector('.bottom-nav');
+  let lastKeyboardOpen = false;
+  window.visualViewport.addEventListener('resize', () => {
+    const vh = window.visualViewport.height;
+    const wh = window.innerHeight;
+    const keyboardOpen = wh - vh > 100;
+    if (keyboardOpen === lastKeyboardOpen) return;
+    lastKeyboardOpen = keyboardOpen;
+    if (keyboardOpen) {
+      nav.classList.add('hidden');
+      // Scroll chat to bottom when keyboard opens
+      const msgs = document.getElementById('chat-messages');
+      if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
+    } else {
+      nav.classList.remove('hidden');
+    }
+  });
+}
+
+function checkProtocol() {
+  if (location.protocol !== 'file:') return;
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#7C3AED;color:white;font-size:13px;padding:10px 16px;text-align:center;line-height:1.5';
+  banner.innerHTML = '⚠️ Mikrofon funktioniert nicht über <b>file://</b>. Bitte <b>start.bat</b> doppelklicken → App öffnet sich automatisch unter <b>localhost:8000</b>. <button onclick="this.parentElement.remove()" style="margin-left:12px;background:rgba(255,255,255,0.2);border:none;color:white;padding:2px 8px;border-radius:4px;cursor:pointer">✕</button>';
+  document.body.prepend(banner);
+}
+
+function extractJSON(text, type) {
+  text = text.replace(/```[\w]*\n?/g, '').trim();
+  const open = type === 'array' ? '[' : '{';
+  const close = type === 'array' ? ']' : '}';
+  const start = text.indexOf(open);
+  if (start === -1) throw new Error('No JSON found in response');
+  let depth = 0;
+  for (let i = start; i < text.length; i++) {
+    if (text[i] === open) depth++;
+    else if (text[i] === close) { depth--; if (depth === 0) return text.slice(start, i + 1); }
+  }
+  throw new Error('Incomplete JSON in response');
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+// ── PLACEMENT TEST ──
+let testQuestions = [];
+let testIdx = 0;
+let testScores = { B1: 0, B2: 0, C1: 0, C2: 0 };
+
+const levelDescs = {
+  B1: 'Du kannst die wichtigsten Punkte verstehen, wenn klare Standardsprache verwendet wird. Du kannst dich in alltäglichen Situationen verständigen.',
+  B2: 'Du kannst die Hauptinhalte komplexer Texte zu konkreten und abstrakten Themen verstehen und dich spontan und fließend unterhalten.',
+  C1: 'Du kannst ein breites Spektrum anspruchsvoller, längerer Texte verstehen und dich spontan und fließend ausdrücken, ohne öfter merklich nach Worten suchen zu müssen.',
+  C2: 'Du kannst praktisch alles, was du hörst oder liest, mühelos verstehen. Dein Ausdruck ist sehr präzise, nuanciert und fließend.'
+};
+
+async function startPlacementTest() {
+  document.getElementById('testIntro').style.display = 'none';
+  document.getElementById('testLoadingCard').style.display = 'flex';
+  testQuestions = [];
+  testIdx = 0;
+  testScores = { B1: 0, B2: 0, C1: 0, C2: 0 };
+
+  const prompt = `Create a JSON placement test for English learners with exactly 20 multiple-choice questions (5 per CEFR level: B1, B2, C1, C2). Cover vocabulary, grammar, idioms, and usage. Return ONLY this JSON structure, no markdown:
+{
+  "questions": [
+    {
+      "level": "B1",
+      "question": "She ___ to work every day by bus.",
+      "options": ["go", "goes", "going", "gone"],
+      "answer": 1,
+      "explanation": "'Goes' is correct because with third-person singular (she) in the present simple, we add -s."
+    }
+  ]
+}
+Make questions progressively harder: B1 = everyday grammar/vocab, B2 = complex structures/idioms, C1 = advanced usage/nuance, C2 = sophisticated vocabulary/subtle distinctions. Mix topics. answer is the 0-based index of the correct option.`;
+
+  try {
+    const res = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai',
+        messages: [{ role: 'user', content: prompt }],
+        seed: Math.floor(Math.random() * 99999)
+      })
+    });
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content || '';
+    const parsed = extractJSON(raw, 'object');
+    if (!parsed?.questions?.length) throw new Error('parse');
+    testQuestions = parsed.questions;
+  } catch (e) {
+    document.getElementById('testLoadingCard').style.display = 'none';
+    document.getElementById('testIntro').style.display = 'flex';
+    alert('Fehler beim Laden der Fragen. Bitte nochmals versuchen.');
+    return;
+  }
+
+  document.getElementById('testLoadingCard').style.display = 'none';
+  showTestQuestion();
+}
+
+function showTestQuestion() {
+  const q = testQuestions[testIdx];
+  const total = testQuestions.length;
+  document.getElementById('testQuestionCard').style.display = 'flex';
+  document.getElementById('testLevelBadge').textContent = q.level;
+  document.getElementById('testCounter').textContent = `${testIdx + 1} / ${total}`;
+  document.getElementById('testProgress').style.width = `${((testIdx) / total) * 100}%`;
+  document.getElementById('testQuestion').textContent = q.question;
+  document.getElementById('testExplanation').style.display = 'none';
+  document.getElementById('testNextBtn').style.display = 'none';
+
+  const optDiv = document.getElementById('testOptions');
+  optDiv.innerHTML = q.options.map((opt, i) =>
+    `<button class="test-opt" onclick="answerTest(${i})">${opt}</button>`
+  ).join('');
+}
+
+function answerTest(chosen) {
+  const q = testQuestions[testIdx];
+  const btns = document.querySelectorAll('.test-opt');
+  btns.forEach(b => b.disabled = true);
+  btns[chosen].classList.add(chosen === q.answer ? 'correct' : 'wrong');
+  if (chosen !== q.answer) btns[q.answer].classList.add('correct');
+
+  if (chosen === q.answer) testScores[q.level] = (testScores[q.level] || 0) + 1;
+
+  const expDiv = document.getElementById('testExplanation');
+  expDiv.textContent = q.explanation || '';
+  expDiv.style.display = 'block';
+  document.getElementById('testNextBtn').style.display = 'block';
+}
+
+function testNext() {
+  testIdx++;
+  if (testIdx >= testQuestions.length) {
+    showTestResult();
+  } else {
+    showTestQuestion();
+  }
+}
+
+function showTestResult() {
+  document.getElementById('testQuestionCard').style.display = 'none';
+  const counts = {};
+  testQuestions.forEach(q => counts[q.level] = (counts[q.level] || 0) + 1);
+
+  // Determine level: highest where score >= 60%
+  const levels = ['B1', 'B2', 'C1', 'C2'];
+  let result = 'B1';
+  for (const lvl of levels) {
+    const total = counts[lvl] || 5;
+    const score = testScores[lvl] || 0;
+    if (score / total >= 0.6) result = lvl;
+  }
+
+  document.getElementById('testResultLevel').textContent = result;
+  document.getElementById('testResultDesc').textContent = levelDescs[result];
+
+  // Level bars
+  const barsHtml = levels.map(lvl => {
+    const total = counts[lvl] || 5;
+    const score = testScores[lvl] || 0;
+    const pct = Math.round((score / total) * 100);
+    const pass = pct >= 60;
+    return `<div class="level-bar-row">
+      <span class="level-bar-label">${lvl}</span>
+      <div class="level-bar-wrap">
+        <div class="level-bar-fill${pass ? ' pass' : ''}" style="width:${pct}%"></div>
+      </div>
+      <span style="font-size:12px;color:var(--text-muted);width:44px;text-align:right">${score}/${total}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('testLevelBars').innerHTML = barsHtml;
+
+  const total = testQuestions.length;
+  const totalCorrect = Object.values(testScores).reduce((a, b) => a + b, 0);
+  document.getElementById('testTotalScore').textContent = `Gesamt: ${totalCorrect} von ${total} richtig`;
+
+  document.getElementById('testResultCard').style.display = 'flex';
+}
+
+function resetPlacementTest() {
+  document.getElementById('testResultCard').style.display = 'none';
+  document.getElementById('testIntro').style.display = 'flex';
+}
+</script>
+</body>
+</html>

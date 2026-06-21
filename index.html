@@ -522,7 +522,31 @@ let ttsVoice = null;
 let ttsVoiceDE = null;
 let vocabRecognition = null;
 let isVocabRecording = false;
+const grammarTopics = {
+  tenses:       { label: '⏰ Tenses',                desc: 'English tenses (present simple, past simple, present perfect, past perfect, future will/going to)' },
+  articles:     { label: '📝 Articles',              desc: 'English articles (a, an, the, or zero article)' },
+  prepositions: { label: '📍 Prepositions',          desc: 'English prepositions of time and place (in, on, at, by, for, with, to, from, since, until)' },
+  modal:        { label: '🔧 Modal Verbs',           desc: 'English modal verbs (can, could, must, should, would, may, might, have to, need to, ought to)' },
+  conditionals: { label: '🔀 Conditionals',          desc: 'English conditional sentences (zero, first, second and third conditional; mixed conditionals)' },
+  passive:      { label: '🔄 Passive Voice',         desc: 'English passive voice (present simple, past simple, present perfect, future passive)' },
+  reported:     { label: '💬 Reported Speech',       desc: 'English reported/indirect speech (statements, questions, commands; tense backshift)' },
+  phrasal:      { label: '🚀 Phrasal Verbs',         desc: 'Common English phrasal verbs (look up, give up, carry on, find out, take off, put off, get on, turn down)' },
+  relative:     { label: '🔗 Relative Clauses',      desc: 'English relative clauses with who, which, that, whose, where, when (defining and non-defining)' },
+  gerund:       { label: '🔤 Gerund vs. Infinitive', desc: 'Gerund vs. infinitive (enjoy doing, want to do, stop doing/to do, remember doing/to do)' },
+  quantifiers:  { label: '🔢 Quantifiers',           desc: 'Quantifiers with countable/uncountable nouns (some, any, much, many, a lot of, a few, a little, enough)' },
+  comparatives: { label: '📊 Comparatives',          desc: 'Comparatives and superlatives (bigger, the biggest, more interesting, as … as, the more … the more)' },
+  questionTags: { label: '❓ Question Tags',         desc: "Question tags (isn't it?, don't you?, haven't they?, won't she?, did they?) — form and use" },
+  conjunctions: { label: '🔁 Conjunctions',          desc: 'Linking words and conjunctions (although, however, therefore, despite, in spite of, whereas, nevertheless, furthermore)' },
+  futureforms:  { label: '🔭 Future Forms',          desc: 'All future forms (will, going to, present continuous for future, future perfect, future continuous)' },
+  pasthabits:   { label: '📼 Past Habits',           desc: 'Expressing past habits and states (used to, would, be used to, get used to)' },
+  verbpatterns: { label: '🎯 Verb Patterns',         desc: 'Verb + -ing or infinitive with meaning change (stop, remember, forget, try, go on, regret, mean)' },
+  wordorder:    { label: '📐 Word Order',            desc: 'English word order, inversion after negative adverbs (never, rarely, hardly), fronting, emphasis' },
+  determiners:  { label: '🔵 Determiners',           desc: 'Determiners and pronouns (each, every, both, either, neither, all, none, another, other, the other)' },
+  idioms:       { label: '🎭 Idioms',                desc: 'Common English idioms and fixed expressions (under the weather, break the ice, hit the nail on the head, etc.)' },
+};
 const usedQuestions = Object.fromEntries(Object.keys(grammarTopics).map(k => [k, []]));
+renderTopicGrid('topicGrid');
+renderTopicGrid('fillTopicGrid', true);
 
 const pronSentences = [
   "The weather is beautiful today.",
@@ -555,8 +579,6 @@ newPronSentence();
 initVizCanvas();
 initKeyboardHandling();
 checkProtocol();
-renderTopicGrid('topicGrid');
-renderTopicGrid('fillTopicGrid', true);
 
 // ── TTS ──
 function initTTS() {
@@ -1100,28 +1122,6 @@ async function generateVocab() {
 }
 
 // ── GRAMMAR ──
-const grammarTopics = {
-  tenses:       { label: '⏰ Tenses',                desc: 'English tenses (present simple, past simple, present perfect, past perfect, future will/going to)' },
-  articles:     { label: '📝 Articles',              desc: 'English articles (a, an, the, or zero article)' },
-  prepositions: { label: '📍 Prepositions',          desc: 'English prepositions of time and place (in, on, at, by, for, with, to, from, since, until)' },
-  modal:        { label: '🔧 Modal Verbs',           desc: 'English modal verbs (can, could, must, should, would, may, might, have to, need to, ought to)' },
-  conditionals: { label: '🔀 Conditionals',          desc: 'English conditional sentences (zero, first, second and third conditional; mixed conditionals)' },
-  passive:      { label: '🔄 Passive Voice',         desc: 'English passive voice (present simple, past simple, present perfect, future passive)' },
-  reported:     { label: '💬 Reported Speech',       desc: 'English reported/indirect speech (statements, questions, commands; tense backshift)' },
-  phrasal:      { label: '🚀 Phrasal Verbs',         desc: 'Common English phrasal verbs (look up, give up, carry on, find out, take off, put off, get on, turn down)' },
-  relative:     { label: '🔗 Relative Clauses',      desc: 'English relative clauses with who, which, that, whose, where, when (defining and non-defining)' },
-  gerund:       { label: '🔤 Gerund vs. Infinitive', desc: 'Gerund vs. infinitive (enjoy doing, want to do, stop doing/to do, remember doing/to do)' },
-  quantifiers:  { label: '🔢 Quantifiers',           desc: 'Quantifiers with countable/uncountable nouns (some, any, much, many, a lot of, a few, a little, enough)' },
-  comparatives: { label: '📊 Comparatives',          desc: 'Comparatives and superlatives (bigger, the biggest, more interesting, as … as, the more … the more)' },
-  questionTags: { label: '❓ Question Tags',         desc: "Question tags (isn't it?, don't you?, haven't they?, won't she?, did they?) — form and use" },
-  conjunctions: { label: '🔁 Conjunctions',          desc: 'Linking words and conjunctions (although, however, therefore, despite, in spite of, whereas, nevertheless, furthermore)' },
-  futureforms:  { label: '🔭 Future Forms',          desc: 'All future forms (will, going to, present continuous for future, future perfect, future continuous)' },
-  pasthabits:   { label: '📼 Past Habits',           desc: 'Expressing past habits and states (used to, would, be used to, get used to)' },
-  verbpatterns: { label: '🎯 Verb Patterns',         desc: 'Verb + -ing or infinitive with meaning change (stop, remember, forget, try, go on, regret, mean)' },
-  wordorder:    { label: '📐 Word Order',            desc: 'English word order, inversion after negative adverbs (never, rarely, hardly), fronting, emphasis' },
-  determiners:  { label: '🔵 Determiners',           desc: 'Determiners and pronouns (each, every, both, either, neither, all, none, another, other, the other)' },
-  idioms:       { label: '🎭 Idioms',                desc: 'Common English idioms and fixed expressions (under the weather, break the ice, hit the nail on the head, etc.)' },
-};
 
 async function startGrammar(topic) {
   grammarTopic = topic; grammarIdx = 0; grammarCorrect = 0; grammarQuestions = [];
@@ -1763,7 +1763,7 @@ Make questions progressively harder: B1 = everyday grammar/vocab, B2 = complex s
     });
     const data = await res.json();
     const raw = data.choices?.[0]?.message?.content || '';
-    const parsed = extractJSON(raw, 'object');
+    const parsed = JSON.parse(extractJSON(raw, 'object'));
     if (!parsed?.questions?.length) throw new Error('parse');
     testQuestions = parsed.questions;
   } catch (e) {

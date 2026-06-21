@@ -650,16 +650,21 @@ function listenToSentence(rate) {
 
 // ── AI API ──
 async function callAI(messages, maxTokens = 400) {
-  const res = await fetch('https://text.pollinations.ai/openai', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'openai', messages, max_tokens: maxTokens, temperature: 0.9, private: true })
-  });
-  if (!res.ok) throw new Error('API error ' + res.status);
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('Empty response');
-  return content;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 3000));
+    const res = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'openai', messages, max_tokens: maxTokens, temperature: 0.9, private: true })
+    });
+    if (res.status === 429) continue;
+    if (!res.ok) throw new Error('API error ' + res.status);
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) continue;
+    return content;
+  }
+  throw new Error('Bitte kurz warten und nochmals versuchen (Rate limit)');
 }
 
 // ── TAB NAVIGATION ──

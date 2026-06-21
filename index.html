@@ -1730,6 +1730,24 @@ const levelDescs = {
   C2: 'Du kannst praktisch alles, was du hörst oder liest, mühelos verstehen. Dein Ausdruck ist sehr präzise, nuanciert und fließend.'
 };
 
+async function fetchTestLevel(level, hint) {
+  const seed = Math.floor(Math.random() * 99999);
+  const prompt = encodeURIComponent(
+    `Return ONLY a JSON array of 5 English multiple-choice questions for CEFR ${level} (${hint}). No markdown. Format: [{"question":"...","options":["a","b","c","d"],"answer":0,"explanation":"..."}] seed:${seed}`
+  );
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 2500));
+      const res = await fetch(`https://text.pollinations.ai/${prompt}?model=openai&seed=${seed}&json=true`);
+      if (!res.ok) continue;
+      const raw = await res.text();
+      const qs = JSON.parse(extractJSON(raw, 'array'));
+      if (qs.length >= 3) return qs.map(q => ({ ...q, level }));
+    } catch (_) {}
+  }
+  throw new Error(`Fragen für ${level} konnten nicht geladen werden`);
+}
+
 async function startPlacementTest() {
   document.getElementById('testIntro').style.display = 'none';
   document.getElementById('testLoadingCard').style.display = 'flex';
@@ -1738,30 +1756,23 @@ async function startPlacementTest() {
   testScores = { B1: 0, B2: 0, C1: 0, C2: 0 };
 
   const levelDefs = [
-    { level: 'B1', hint: 'basic everyday grammar and common vocabulary (present/past tenses, articles, prepositions)' },
-    { level: 'B2', hint: 'intermediate structures (conditionals, passive voice, phrasal verbs, collocations)' },
-    { level: 'C1', hint: 'advanced grammar and nuanced vocabulary (inversion, advanced modals, formal register)' },
-    { level: 'C2', hint: 'near-native subtle distinctions (nuanced word choice, sophisticated idioms, connotation)' }
+    { level: 'B1', hint: 'basic grammar and everyday vocabulary' },
+    { level: 'B2', hint: 'intermediate grammar, idioms and collocations' },
+    { level: 'C1', hint: 'advanced grammar, formal register and nuanced vocabulary' },
+    { level: 'C2', hint: 'near-native subtle word distinctions and sophisticated idioms' }
   ];
 
   try {
     const all = [];
     for (const { level, hint } of levelDefs) {
-      const seed = Math.floor(Math.random() * 99999);
-      const prompt = `Create 5 English multiple-choice questions at CEFR ${level} level (${hint}). seed:${seed}
-Return ONLY a JSON array, no markdown, no extra text:
-[{"question":"She ___ to work every day.","options":["go","goes","going","gone"],"answer":1,"explanation":"Third person singular needs -s."}]
-4 options per question. answer = 0-based index of correct option.`;
-      const raw = await callAI([{ role: 'user', content: prompt }], 900);
-      const qs = JSON.parse(extractJSON(raw, 'array'));
-      qs.forEach(q => { q.level = level; all.push(q); });
+      const qs = await fetchTestLevel(level, hint);
+      all.push(...qs);
     }
-    if (all.length < 8) throw new Error('too few questions');
     testQuestions = all;
   } catch (e) {
     document.getElementById('testLoadingCard').style.display = 'none';
     document.getElementById('testIntro').style.display = 'flex';
-    alert('Fehler beim Laden der Fragen. Bitte nochmals versuchen.');
+    alert('Fehler: ' + e.message);
     return;
   }
 

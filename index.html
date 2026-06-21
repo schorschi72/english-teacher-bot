@@ -1732,15 +1732,13 @@ const levelDescs = {
 
 async function fetchTestLevel(level, hint) {
   const seed = Math.floor(Math.random() * 99999);
-  const prompt = encodeURIComponent(
-    `Return ONLY a JSON array of 5 English multiple-choice questions for CEFR ${level} (${hint}). No markdown. Format: [{"question":"...","options":["a","b","c","d"],"answer":0,"explanation":"..."}] seed:${seed}`
-  );
+  const prompt = `Create 5 English multiple-choice questions for CEFR ${level} level (${hint}). seed:${seed}
+Return ONLY a valid JSON array, nothing else:
+[{"question":"She ___ to work every day.","options":["go","goes","going","gone"],"correct":1,"explanation":"Third person singular needs -s."}]`;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       if (attempt > 0) await new Promise(r => setTimeout(r, 2500));
-      const res = await fetch(`https://text.pollinations.ai/${prompt}?model=openai&seed=${seed}&json=true`);
-      if (!res.ok) continue;
-      const raw = await res.text();
+      const raw = await callAI([{ role: 'user', content: prompt }], 900);
       const qs = JSON.parse(extractJSON(raw, 'array'));
       if (qs.length >= 3) return qs.map(q => ({ ...q, level }));
     } catch (_) {}
@@ -1801,10 +1799,10 @@ function answerTest(chosen) {
   const q = testQuestions[testIdx];
   const btns = document.querySelectorAll('.test-opt');
   btns.forEach(b => b.disabled = true);
-  btns[chosen].classList.add(chosen === q.answer ? 'correct' : 'wrong');
-  if (chosen !== q.answer) btns[q.answer].classList.add('correct');
+  btns[chosen].classList.add(chosen === q.correct ? 'correct' : 'wrong');
+  if (chosen !== q.correct) btns[q.correct].classList.add('correct');
 
-  if (chosen === q.answer) testScores[q.level] = (testScores[q.level] || 0) + 1;
+  if (chosen === q.correct) testScores[q.level] = (testScores[q.level] || 0) + 1;
 
   const expDiv = document.getElementById('testExplanation');
   expDiv.textContent = q.explanation || '';

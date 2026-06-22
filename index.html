@@ -898,6 +898,8 @@
 </div>
 
 <!-- Word tap popup -->
+<div id="selectionVocabBtn" style="display:none;position:fixed;z-index:9999;background:#4F46E5;color:#fff;border:none;border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(79,70,229,0.5);white-space:nowrap" onclick="addSelectionToVocab()">+ Zu Vocab</div>
+
 <div id="wordPopup">
   <div style="display:flex;align-items:center;justify-content:space-between">
     <div class="pw-word" id="pwWord"></div>
@@ -2340,7 +2342,6 @@ async function evaluatePronunciation(transcript) {
     const tipText = data.tip || data.issues || '';
     document.getElementById('pronTranscript').innerHTML =
       '🗣 You said: "' + escHtml(transcript) + '"' + (tipText ? '<br><br>💡 ' + escHtml(tipText) : '');
-    if (ttsEnabled && data.feedback) speak(data.feedback + (data.tip ? ' ' + data.tip : ''));
   } catch(e) {
     // Fallback: local score from word diff
     const tWords = normalise(currentPronSentence).split(/\s+/);
@@ -3637,6 +3638,58 @@ document.addEventListener('click', (e) => {
   const popup = document.getElementById('wordPopup');
   if (popup && !popup.contains(e.target)) closeWordPopup();
 });
+
+// ── TEXT SELECTION → VOCAB ──
+let _selVocabWord = '';
+function _hideSelBtn() {
+  document.getElementById('selectionVocabBtn').style.display = 'none';
+  _selVocabWord = '';
+}
+
+document.addEventListener('selectionchange', () => {
+  const sel = window.getSelection();
+  const text = (sel?.toString() || '').trim().replace(/[^a-zA-Z'\- ]/g, '').trim();
+  const btn = document.getElementById('selectionVocabBtn');
+  if (!text || text.length < 2 || text.length > 40 || !btn) { _hideSelBtn(); return; }
+  _selVocabWord = text;
+  // Position near selection
+  try {
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const top = Math.max(8, rect.top - 48 + window.scrollY);
+    const left = Math.min(window.innerWidth - 140, Math.max(8, rect.left + rect.width / 2 - 60));
+    btn.style.top = top + 'px';
+    btn.style.left = left + 'px';
+    btn.style.display = 'block';
+  } catch(e) { _hideSelBtn(); }
+});
+
+document.addEventListener('touchend', () => {
+  // Small delay so selectionchange fires first
+  setTimeout(() => {
+    const sel = window.getSelection();
+    if (!sel?.toString().trim()) _hideSelBtn();
+  }, 300);
+});
+
+async function addSelectionToVocab() {
+  const word = _selVocabWord.split(/\s+/)[0]; // use first word if multiple selected
+  if (!word) return;
+  _hideSelBtn();
+  window.getSelection()?.removeAllRanges();
+  const exists = vocab.find(v => v.word.toLowerCase() === word.toLowerCase());
+  if (exists) { showToast(`"${word}" ist bereits in deinem Vocab`); return; }
+  showToast(`⏳ Übersetzung wird geholt…`);
+  let translation = '';
+  try {
+    const reply = await callAI([{role:'user', content:`Translate the English word "${word}" to German. Reply with ONLY the German word or short phrase, nothing else.`}], 30);
+    translation = reply.trim().replace(/^["']|["']$/g, '');
+  } catch(e) {}
+  vocab.push({ word, translation, example: '', learned: false });
+  localStorage.setItem('vocab', JSON.stringify(vocab));
+  renderVocabStats();
+  showToast(`✓ "${word}" → ${translation || '?'} zu Vocab hinzugefügt`);
+}
 </script>
 </body>
 </html>

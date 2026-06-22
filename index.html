@@ -1048,18 +1048,16 @@ function initTTS() {
   }
 }
 
-let _ttsAudioCtx = null;
-let _ttsSource = null;
-const _ttsCache = {};
-
-function _speakFallback(text, rate = 0.95) {
-  if (!window.speechSynthesis) return;
+function speak(text, rate = 0.95) {
+  if (!window.speechSynthesis || !ttsEnabled) return;
+  const clean = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!clean) return;
   speechSynthesis.cancel();
   if (isIOS && !ttsVoice) {
     const v = speechSynthesis.getVoices();
     ttsVoice = v.find(x => x.lang.startsWith('en-')) || null;
   }
-  const utt = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+  const utt = new SpeechSynthesisUtterance(clean);
   utt.lang = 'en-GB'; utt.rate = rate; utt.pitch = 1;
   if (ttsVoice) utt.voice = ttsVoice;
   if (isIOS) { speechSynthesis.resume(); }
@@ -1071,57 +1069,6 @@ function _speakFallback(text, rate = 0.95) {
     }, 10000);
     utt.onend = () => clearInterval(keepalive);
   }
-}
-
-function speak(text, rate = 0.95) {
-  if (!ttsEnabled) return;
-  const clean = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  if (!clean) return;
-  const key = getApiKey();
-  if (!key) { _speakFallback(clean, rate); return; }
-  // Stop any current audio
-  if (_ttsSource) { try { _ttsSource.stop(); } catch(e) {} _ttsSource = null; }
-  if (_ttsAudioCtx) { _ttsAudioCtx.close(); _ttsAudioCtx = null; }
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  // Use cached audio if available
-  if (_ttsCache[clean]) { _playPCM(_ttsCache[clean]); return; }
-  // Fetch from Gemini TTS
-  fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${key}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: clean }] }],
-      generationConfig: {
-        response_modalities: ['AUDIO'],
-        speech_config: { voice_config: { prebuilt_voice_config: { voice_name: 'Aoede' } } }
-      }
-    })
-  }).then(r => r.json()).then(data => {
-    const inlineData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-    if (!inlineData?.data) { _speakFallback(clean, rate); return; }
-    // Cache and play
-    if (Object.keys(_ttsCache).length > 40) delete _ttsCache[Object.keys(_ttsCache)[0]];
-    _ttsCache[clean] = inlineData.data;
-    _playPCM(inlineData.data);
-  }).catch(() => _speakFallback(clean, rate));
-}
-
-function _playPCM(b64) {
-  try {
-    const binary = atob(b64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const samples = bytes.length / 2;
-    const float32 = new Float32Array(samples);
-    const view = new DataView(bytes.buffer);
-    for (let i = 0; i < samples; i++) float32[i] = view.getInt16(i * 2, true) / 32768;
-    _ttsAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const buffer = _ttsAudioCtx.createBuffer(1, samples, 24000);
-    buffer.getChannelData(0).set(float32);
-    _ttsSource = _ttsAudioCtx.createBufferSource();
-    _ttsSource.buffer = buffer;
-    _ttsSource.connect(_ttsAudioCtx.destination);
-    _ttsSource.start();
-  } catch(e) {}
 }
 
 function speakDE(text, rate = 0.95) {
@@ -2313,50 +2260,50 @@ function buildWordDiff(target, spoken) {
   return result.join(' ');
 }
 
-async function evaluatePronunciation(transcript) {
+function evaluatePronunciation(transcript) {
   const result = document.getElementById('pronResult');
   result.style.display = 'flex'; result.style.flexDirection = 'column'; result.style.gap = '14px';
-  document.getElementById('pronFeedback').textContent = '⏳ Evaluating...';
-  document.getElementById('pronTranscript').textContent = '🗣 You said: "' + transcript + '"';
-  document.getElementById('scoreNum').textContent = '...';
-  document.getElementById('scoreRing').style.background = `conic-gradient(var(--text-muted) 50%, var(--surface2) 0%)`;
-  document.getElementById('wordDiff').style.display = 'none';
 
-  // Color the sentence spans immediately
+  // Color the sentence spans
   applyFinalSpanColors(transcript);
 
-  // Show word diff immediately (no API needed)
+  // Word diff
   const diffEl = document.getElementById('wordDiff');
   diffEl.innerHTML = '<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Word check</div>' + buildWordDiff(currentPronSentence, transcript);
   diffEl.style.display = 'block';
 
-  try {
-    const reply = await callAI([{ role: 'user', content: `The student should say: "${currentPronSentence}"\nThey said: "${transcript}"\n\nGive:\n1) score 0–100 (how accurately they said the sentence)\n2) 2 sentences of specific, encouraging spoken feedback\n3) The most important thing they should practise\n\nRespond ONLY with this JSON:\n{"score":85,"feedback":"Great effort! Your rhythm was natural and most words were clear.","tip":"Focus on the word \\"seashells\\" — try stressing the first syllable: SEA-shells."}` }], 300);
-    const data = JSON.parse(extractJSON(reply, 'object'));
-    const score = Math.min(100, Math.max(0, parseInt(data.score) || 0));
-    document.getElementById('scoreNum').textContent = score + '%';
-    const color = score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444';
-    document.getElementById('scoreRing').style.background = `conic-gradient(${color} ${score}%, var(--surface2) 0%)`;
-    document.getElementById('scoreNum').style.color = color;
-    document.getElementById('pronFeedback').textContent = data.feedback || '';
-    const tipText = data.tip || data.issues || '';
-    document.getElementById('pronTranscript').innerHTML =
-      '🗣 You said: "' + escHtml(transcript) + '"' + (tipText ? '<br><br>💡 ' + escHtml(tipText) : '');
-  } catch(e) {
-    // Fallback: local score from word diff
-    const tWords = normalise(currentPronSentence).split(/\s+/);
-    const sWords = normalise(transcript).split(/\s+/);
-    const matches = tWords.filter(w => sWords.includes(w)).length;
-    const fallbackScore = tWords.length ? Math.round(matches / tWords.length * 100) : 0;
-    const color = fallbackScore >= 80 ? '#10B981' : fallbackScore >= 50 ? '#F59E0B' : '#EF4444';
-    document.getElementById('scoreNum').textContent = fallbackScore + '%';
-    document.getElementById('scoreRing').style.background = `conic-gradient(${color} ${fallbackScore}%, var(--surface2) 0%)`;
-    document.getElementById('scoreNum').style.color = color;
-    document.getElementById('pronFeedback').textContent = fallbackScore >= 80
-      ? 'Great job! Most words were correct.' : fallbackScore >= 50
-      ? 'Good effort! Keep practising the highlighted words.'
-      : 'Keep going — practise the sentence slowly first.';
+  // Local score (Levenshtein-based, accurate)
+  const tWords = normalise(currentPronSentence).split(/\s+/);
+  const sWords = normalise(transcript).split(/\s+/);
+  let matched = 0;
+  const used = new Array(sWords.length).fill(false);
+  for (const tw of tWords) {
+    let best = -1, bestDist = Infinity;
+    for (let k = 0; k < sWords.length; k++) {
+      if (used[k]) continue;
+      const d = levenshtein(tw, sWords[k]);
+      if (d < bestDist && d <= Math.max(1, Math.floor(tw.length / 3))) { bestDist = d; best = k; }
+    }
+    if (best !== -1) { matched++; used[best] = true; }
   }
+  const score = tWords.length ? Math.round(matched / tWords.length * 100) : 0;
+  const color = score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444';
+  document.getElementById('scoreNum').textContent = score + '%';
+  document.getElementById('scoreRing').style.background = `conic-gradient(${color} ${score}%, var(--surface2) 0%)`;
+  document.getElementById('scoreNum').style.color = color;
+
+  // Find missed words for specific tip
+  const missed = tWords.filter(tw => !sWords.some(sw => levenshtein(tw, sw) <= Math.max(1, Math.floor(tw.length / 3))));
+  let feedback, tip = '';
+  if (score >= 90) { feedback = '🌟 Excellent! Your pronunciation was very accurate.'; }
+  else if (score >= 75) { feedback = '👍 Great job! Most words came through clearly.'; }
+  else if (score >= 50) { feedback = 'Good effort! Focus on the red words and try again.'; }
+  else { feedback = 'Keep going — listen to the sentence first, then repeat slowly.'; }
+  if (missed.length > 0 && missed.length <= 3) tip = '💡 Practise: ' + missed.map(w => `"${w}"`).join(', ');
+
+  document.getElementById('pronFeedback').textContent = feedback;
+  document.getElementById('pronTranscript').innerHTML =
+    '🗣 You said: "' + escHtml(transcript) + '"' + (tip ? '<br><br>' + escHtml(tip) : '');
 }
 
 // ── AUDIO VISUALIZER ──

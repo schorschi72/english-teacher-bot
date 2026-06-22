@@ -2841,7 +2841,6 @@ function renderProgress() {
   document.getElementById('pgGrammarTip').textContent = tips[Math.floor(Math.random()*tips.length)];
 
   // Track learning days
-  const today = new Date().toDateString();
   const lastDay = localStorage.getItem('lastLearningDay');
   if (lastDay !== today) {
     localStorage.setItem('lastLearningDay', today);

@@ -2099,19 +2099,22 @@ function showMicError(context) {
 
 function setPronError(code, extra) {
   const map = {
-    'not-allowed':   'Microphone blocked. Click the 🔒 icon in your browser address bar and allow the microphone.',
-    'no-speech':     'No speech detected — please try again.',
-    'network':       'Network error: speech recognition needs internet access (Google Speech API).',
-    'audio-capture': 'No microphone found — please connect one.',
-    'service-not-allowed': 'Speech service not allowed. Try opening this file via localhost instead of file://',
+    'not-allowed':   'Mikrofon blockiert. Klicke auf das 🔒-Symbol in der Adressleiste und erlaube das Mikrofon.',
+    'no-speech':     'Nichts gehört — bitte nochmals versuchen oder Text unten eintippen.',
+    'network':       '⚠️ Keine Verbindung zur Sprach-API (benötigt Internet). Bitte tippe deinen Satz unten ein:',
+    'audio-capture': 'Kein Mikrofon gefunden — bitte eines anschließen oder Text eintippen.',
+    'service-not-allowed': 'Sprachdienst nicht erlaubt. Öffne die App über localhost (start.bat) statt file://.',
     'aborted':       '',
   };
-  const text = map[code] || ('Error: ' + code + (extra ? ' — ' + extra : ''));
+  const text = map[code] || ('Fehler: ' + code + (extra ? ' — ' + extra : ''));
   if (!text) return;
   const hint = document.getElementById('micHint');
   hint.style.display = 'block';
   hint.textContent = text;
-  document.getElementById('micStatus').textContent = 'Tap to try again';
+  document.getElementById('micStatus').textContent = 'Erneut tippen oder Text eingeben';
+  if (code === 'network' || code === 'audio-capture' || code === 'not-allowed' || code === 'service-not-allowed') {
+    document.getElementById('pronTextFallback').style.display = 'flex';
+  }
 }
 
 function initSpeechRecognition() {

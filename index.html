@@ -1162,13 +1162,15 @@ async function callAI(messages, maxTokens = 400) {
   };
   if (systemInstruction) body.systemInstruction = systemInstruction;
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
+  const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-flash-latest'];
+  for (let attempt = 0; attempt < MODELS.length * 2; attempt++) {
+    const model = MODELS[attempt % MODELS.length];
+    if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal }
       );
       clearTimeout(timer);
@@ -1185,7 +1187,7 @@ async function callAI(messages, maxTokens = 400) {
     } catch(e) {
       clearTimeout(timer);
       if (e.name === 'AbortError') continue;
-      if (attempt >= 2) throw e;
+      if (attempt >= MODELS.length * 2 - 1) throw e;
     }
   }
   throw new Error('KI antwortet nicht — bitte nochmals versuchen');
@@ -2304,6 +2306,8 @@ function evaluatePronunciation(transcript) {
   document.getElementById('pronFeedback').textContent = feedback;
   document.getElementById('pronTranscript').innerHTML =
     '🗣 You said: "' + escHtml(transcript) + '"' + (tip ? '<br><br>' + escHtml(tip) : '');
+  // Scroll result into view on mobile
+  setTimeout(() => result.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
 // ── AUDIO VISUALIZER ──

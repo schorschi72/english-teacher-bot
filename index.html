@@ -883,6 +883,10 @@
 </nav>
 
 <script>
+// ── DEVICE DETECTION (must be first) ──
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
 // ── STATE ──
 let chatMode = 'freeChat';
 let chatHistory = [];
@@ -1780,9 +1784,6 @@ function answerGrammar(chosen) {
 }
 
 // ── SPEECH RECOGNITION ──
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
 function showIOSHint(context) {
   const msg = '🍎 iPhone: Mikrofon-Taste auf der Tastatur tippen (🎤) zum Diktieren — dann Text absenden.';
   if (context === 'chat') {

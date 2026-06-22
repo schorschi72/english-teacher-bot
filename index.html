@@ -3502,6 +3502,26 @@ function resetPlacementTest() {
 let pwCurrentWord = '';
 let pwCurrentTrans = '';
 const pwTransCache = {};
+let _pwLoadingPromise = null;
+
+// Fast free translation via MyMemory (no API key needed, ~200ms)
+async function _translateWordFast(word) {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3000);
+    const res = await fetch(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|de`,
+      { signal: ctrl.signal }
+    );
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      const trans = data.responseData?.translatedText;
+      if (trans && data.responseStatus === 200 && trans.toLowerCase() !== word.toLowerCase()) return trans;
+    }
+  } catch(e) {}
+  return null;
+}
 
 function makeWordsTappable(containerEl) {
   const html = containerEl.innerHTML || containerEl.textContent;
@@ -3528,6 +3548,7 @@ function onWordTap(e, word) {
   e.stopPropagation();
   pwCurrentWord = word;
   pwCurrentTrans = '';
+  _pwLoadingPromise = null;
   const popup = document.getElementById('wordPopup');
   document.getElementById('pwWord').textContent = word;
   document.getElementById('pwTrans').innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>';
@@ -3540,27 +3561,40 @@ function onWordTap(e, word) {
   popup.style.top = py + 'px';
   popup.style.display = 'flex';
 
-  // Fetch translation + example via AI (with session cache)
   const cacheKey = word.toLowerCase();
   if (pwTransCache[cacheKey]) {
     const cached = pwTransCache[cacheKey];
     pwCurrentTrans = cached.translation;
     _renderWordPopupTrans(cached);
-  } else {
-    _callAIOnce([{role:'user', content:`For the English word "${word}", reply ONLY with valid JSON:\n{"translation":"German word or phrase","example":"One natural sentence using ${word}."}`}], 80)
-      .then(t => {
-        let data = { translation: '', example: '' };
-        try { data = JSON.parse(extractJSON(t, 'object')); } catch(e) { data.translation = t.trim(); }
-        pwCurrentTrans = data.translation || '';
-        pwTransCache[cacheKey] = { translation: pwCurrentTrans, example: data.example || '' };
-        if (document.getElementById('pwWord').textContent === word)
-          _renderWordPopupTrans(pwTransCache[cacheKey]);
-      })
-      .catch(() => {
-        if (document.getElementById('pwWord').textContent === word)
-          document.getElementById('pwTrans').textContent = '(offline)';
-      });
+    return;
   }
+
+  // Load: fast translation first, then AI example in background
+  _pwLoadingPromise = (async () => {
+    // Step 1: instant translation via MyMemory (no key needed)
+    const fastTrans = await _translateWordFast(word);
+    if (fastTrans) {
+      pwCurrentTrans = fastTrans;
+      if (document.getElementById('pwWord').textContent === word) {
+        document.getElementById('pwTrans').innerHTML =
+          `<span style="font-weight:700">${escHtml(fastTrans)}</span>` +
+          `<span style="font-size:11px;color:var(--text-muted);margin-left:6px">…Beispiel lädt</span>`;
+      }
+    }
+    // Step 2: AI for example sentence (background, optional)
+    try {
+      const t = await _callAIOnce([{role:'user', content:`For the English word "${word}", reply ONLY with valid JSON:\n{"translation":"German word or phrase","example":"One short natural sentence using ${word}."}`}], 80);
+      let data = { translation: fastTrans || '', example: '' };
+      try { data = JSON.parse(extractJSON(t, 'object')); } catch(err) {}
+      pwCurrentTrans = data.translation || fastTrans || '';
+      pwTransCache[cacheKey] = { translation: pwCurrentTrans, example: data.example || '' };
+    } catch(err) {
+      // AI failed — use fast translation without example
+      pwTransCache[cacheKey] = { translation: pwCurrentTrans, example: '' };
+    }
+    if (document.getElementById('pwWord').textContent === word)
+      _renderWordPopupTrans(pwTransCache[cacheKey]);
+  })();
 }
 
 function _renderWordPopupTrans(cached) {
@@ -3597,17 +3631,26 @@ function closeWordPopup() {
   document.getElementById('wordPopup').style.display = 'none';
 }
 
-function addWordFromPopup() {
+async function addWordFromPopup() {
   if (!pwCurrentWord) return;
-  const exists = vocab.find(v => v.word.toLowerCase() === pwCurrentWord.toLowerCase());
-  if (exists) { closeWordPopup(); showToast(`"${pwCurrentWord}" ist bereits in deinem Vocab`); return; }
-  const cached = pwTransCache[pwCurrentWord.toLowerCase()];
+  const word = pwCurrentWord;
+  const exists = vocab.find(v => v.word.toLowerCase() === word.toLowerCase());
+  if (exists) { closeWordPopup(); showToast(`"${word}" ist bereits in deinem Vocab`); return; }
+
+  // Wait for translation if still loading
+  if (_pwLoadingPromise && !pwCurrentTrans) {
+    document.getElementById('pwTrans').innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>';
+    await _pwLoadingPromise.catch(() => {});
+  }
+
+  const cached = pwTransCache[word.toLowerCase()];
+  const translation = pwCurrentTrans || cached?.translation || '';
   const example = cached?.example || '';
-  vocab.push({ word: pwCurrentWord, translation: pwCurrentTrans || '', example, learned: false });
+  vocab.push({ word, translation, example, learned: false });
   localStorage.setItem('vocab', JSON.stringify(vocab));
   renderVocabStats();
   closeWordPopup();
-  showToast(`✓ "${pwCurrentWord}" zu Vocab hinzugefügt`);
+  showToast(`✓ "${word}" → ${translation || '?'} zu Vocab hinzugefügt`);
 }
 
 function showToast(msg) {
@@ -3670,15 +3713,19 @@ async function addSelectionToVocab() {
   window.getSelection()?.removeAllRanges();
   const exists = vocab.find(v => v.word.toLowerCase() === word.toLowerCase());
   if (exists) { showToast(`"${word}" ist bereits in deinem Vocab`); return; }
-  showToast(`⏳ Übersetzung + Beispiel werden geholt…`);
+  showToast(`⏳ Übersetzung wird geholt…`);
   let translation = '', example = '';
+  // Fast translation first
+  translation = (await _translateWordFast(word)) || '';
+  if (translation) showToast(`⏳ "${word}" → ${translation} — speichern…`);
+  // AI example in background
   try {
-    const reply = await _callAIOnce([{role:'user', content:`For the English word "${word}", reply ONLY with valid JSON:\n{"translation":"German word or phrase","example":"One natural sentence using ${word}."}`}], 80);
+    const reply = await _callAIOnce([{role:'user', content:`For the English word "${word}", reply ONLY with valid JSON:\n{"translation":"German word or phrase","example":"One short natural sentence using ${word}."}`}], 80);
     const data = JSON.parse(extractJSON(reply, 'object'));
-    translation = data.translation || '';
+    translation = data.translation || translation;
     example = data.example || '';
     pwTransCache[word.toLowerCase()] = { translation, example };
-  } catch(e) {}
+  } catch(e) { pwTransCache[word.toLowerCase()] = { translation, example: '' }; }
   vocab.push({ word, translation, example, learned: false });
   localStorage.setItem('vocab', JSON.stringify(vocab));
   renderVocabStats();

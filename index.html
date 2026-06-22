@@ -1168,7 +1168,7 @@ async function callAIStream(messages, maxTokens = 500, onChunk) {
   const key = getApiKey();
   if (!key) { switchTab('home', document.querySelector('.nav-btn')); updateApiKeyUI(); throw new Error('Kein API Key'); }
   const body = _buildGeminiBody(messages, maxTokens);
-  const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash'];
   let lastErr = '';
   for (let attempt = 0; attempt < 3; attempt++) {
     const model = MODELS[Math.min(attempt, MODELS.length - 1)];
@@ -1228,7 +1228,7 @@ async function callAI(messages, maxTokens = 400) {
     throw new Error('Bitte zuerst den API Key im Start-Tab eingeben');
   }
   const body = _buildGeminiBody(messages, maxTokens);
-  const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash'];
   let lastErr = '';
   for (let attempt = 0; attempt < 3; attempt++) {
     const model = MODELS[Math.min(attempt, MODELS.length - 1)];

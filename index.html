@@ -2172,7 +2172,7 @@ async function toggleRecording() {
     if (pronRecognition) pronRecognition.abort();
     stopPronRecording(); return;
   }
-  if (isIOS || !SR) { showIOSHint('speak'); return; }
+  if (!SR) { showIOSHint('speak'); return; }
 
   speechSynthesis.cancel();
   isRecording = true; lastInterim = '';
@@ -3583,11 +3583,15 @@ function onWordTap(e, word) {
     }
     // Step 2: AI for example sentence (background, optional)
     try {
-      const t = await _callAIOnce([{role:'user', content:`For the English word "${word}", reply ONLY with valid JSON:\n{"translation":"German word or phrase","example":"One short natural sentence using ${word}."}`}], 80);
-      let data = { translation: fastTrans || '', example: '' };
+      const t = await _callAIOnce([{role:'user', content:`For the English word "${word}", reply ONLY with valid JSON:\n{"baseForm":"if verb give infinitive (e.g. 'running'→'run'), otherwise same word","translation":"German translation of the base form","example":"One short natural sentence using the base form."}`}], 80);
+      let data = { baseForm: word, translation: fastTrans || '', example: '' };
       try { data = JSON.parse(extractJSON(t, 'object')); } catch(err) {}
+      const saveWord = (data.baseForm && data.baseForm.trim()) ? data.baseForm.trim() : word;
+      pwCurrentWord = saveWord;
+      if (document.getElementById('pwWord').textContent === word)
+        document.getElementById('pwWord').textContent = saveWord;
       pwCurrentTrans = data.translation || fastTrans || '';
-      pwTransCache[cacheKey] = { translation: pwCurrentTrans, example: data.example || '' };
+      pwTransCache[saveWord.toLowerCase()] = { translation: pwCurrentTrans, example: data.example || '' };
     } catch(err) {
       // AI failed — use fast translation without example
       pwTransCache[cacheKey] = { translation: pwCurrentTrans, example: '' };
@@ -3720,7 +3724,7 @@ async function addSelectionToVocab() {
   if (translation) showToast(`⏳ "${word}" → ${translation} — speichern…`);
   // AI example in background
   try {
-    const reply = await _callAIOnce([{role:'user', content:`For the English word "${word}", reply ONLY with valid JSON:\n{"translation":"German word or phrase","example":"One short natural sentence using ${word}."}`}], 80);
+    const reply = await _callAIOnce([{role:'user', content:`For the English word "${word}", reply ONLY with valid JSON:\n{"baseForm":"if verb give infinitive (e.g. 'running'→'run'), otherwise same word","translation":"German translation of the base form","example":"One short natural sentence using the base form."}`}], 80);
     const data = JSON.parse(extractJSON(reply, 'object'));
     translation = data.translation || translation;
     example = data.example || '';

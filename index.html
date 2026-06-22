@@ -884,6 +884,15 @@
       <button class="mic-btn" id="micBtn" onclick="toggleRecording()">🎤</button>
       <div id="micStatus" style="color:var(--text-muted);font-size:14px">Tap the microphone and speak</div>
       <div id="micHint" class="mic-hint" style="display:none"></div>
+      <!-- Text fallback for HTTP/non-HTTPS environments -->
+      <div id="pronTextFallback" style="display:none;flex-direction:column;gap:8px;width:100%">
+        <div style="font-size:12px;color:var(--text-muted)">✍️ Alternatively: type what you said</div>
+        <div style="display:flex;gap:8px">
+          <input id="pronTextInput" placeholder="Type your spoken sentence…" autocorrect="off" autocapitalize="none" spellcheck="false"
+            style="flex:1;font-size:15px" onkeydown="if(event.key==='Enter')submitPronText()"/>
+          <button class="btn" style="width:auto;padding:10px 16px;min-height:44px;font-size:14px" onclick="submitPronText()">✓</button>
+        </div>
+      </div>
     </div>
     <div class="card" id="pronResult" style="display:none;gap:14px;align-items:center">
       <div class="section-title" style="align-self:flex-start">Your result</div>
@@ -2119,6 +2128,15 @@ function newPronSentence() {
   document.getElementById('pronResult').style.display = 'none';
   document.getElementById('micHint').style.display = 'none';
   document.getElementById('wordDiff').style.display = 'none';
+  document.getElementById('pronTextInput').value = '';
+}
+
+function submitPronText() {
+  const val = document.getElementById('pronTextInput').value.trim();
+  if (!val) return;
+  document.getElementById('pronTextFallback').style.display = 'none';
+  document.getElementById('micHint').style.display = 'none';
+  evaluatePronunciation(val);
 }
 
 function renderSentenceSpans() {
@@ -2184,6 +2202,15 @@ async function toggleRecording() {
     hint.innerHTML = isIOS
       ? '🍎 <b>iPhone:</b> Öffne diese App im <b>Safari-Browser</b> (nicht als Home-Screen-App) für die Spracherkennung.'
       : 'Spracherkennung wird von diesem Browser nicht unterstützt. Bitte Chrome oder Safari verwenden.';
+    document.getElementById('pronTextFallback').style.display = 'flex';
+    return;
+  }
+  // Android Chrome requires HTTPS for speech recognition on local network
+  const isSecureCtx = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if (!isSecureCtx) {
+    document.getElementById('micHint').style.display = 'block';
+    document.getElementById('micHint').innerHTML = '🔒 <b>Android:</b> Spracherkennung benötigt HTTPS. Nutze den Text-Eingang unten.';
+    document.getElementById('pronTextFallback').style.display = 'flex';
     return;
   }
 
@@ -2233,7 +2260,8 @@ async function toggleRecording() {
       if (!gotAnyResult) {
         const hint = document.getElementById('micHint');
         hint.style.display = 'block';
-        hint.textContent = 'Nichts gehört — Mikrofon-Erlaubnis prüfen und nochmals versuchen.';
+        hint.textContent = 'Nichts gehört — Mikrofon-Erlaubnis prüfen oder Text unten eintippen.';
+        document.getElementById('pronTextFallback').style.display = 'flex';
       }
     }
   };

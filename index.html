@@ -1168,11 +1168,17 @@ async function callAIStream(messages, maxTokens = 500, onChunk) {
   const key = getApiKey();
   if (!key) { switchTab('home', document.querySelector('.nav-btn')); updateApiKeyUI(); throw new Error('Kein API Key'); }
   const body = _buildGeminiBody(messages, maxTokens);
-  const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash'];
+  // Each entry: [model, delayMs before this attempt]
+  const ATTEMPTS = [
+    ['gemini-2.0-flash-lite', 0],
+    ['gemini-2.0-flash',      1000],
+    ['gemini-2.0-flash-lite', 3000],
+    ['gemini-2.0-flash',      3000],
+    ['gemini-2.5-flash',      3000],
+  ];
   let lastErr = '';
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const model = MODELS[Math.min(attempt, MODELS.length - 1)];
-    if (attempt > 0) await new Promise(r => setTimeout(r, 800));
+  for (const [model, delay] of ATTEMPTS) {
+    if (delay) await new Promise(r => setTimeout(r, delay));
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
     try {
@@ -1181,7 +1187,7 @@ async function callAIStream(messages, maxTokens = 500, onChunk) {
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal }
       );
       clearTimeout(timer);
-      if (res.status === 429) { lastErr = `Rate limit (429)`; continue; }
+      if (res.status === 429) { lastErr = `Rate limit (429) bei ${model}`; continue; }
       if (res.status === 503) { lastErr = `Nicht verfügbar (503)`; continue; }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -1212,11 +1218,10 @@ async function callAIStream(messages, maxTokens = 500, onChunk) {
     } catch(e) {
       clearTimeout(timer);
       if (e.name === 'AbortError') { lastErr = 'Timeout'; continue; }
-      if (attempt >= 2) throw e;
-      lastErr = e.message;
+      throw e;
     }
   }
-  throw new Error('KI antwortet nicht. ' + lastErr);
+  throw new Error('Rate limit erreicht — bitte 30 Sekunden warten und nochmals senden. (' + lastErr + ')');
 }
 
 async function callAI(messages, maxTokens = 400) {

@@ -1412,20 +1412,8 @@ async function sendChat() {
 
   chatHistory.push({ role: 'user', content: text });
 
-  try {
-    let started = false;
-    const reply = await callAIStream(
-      [{ role: 'system', content: systemPrompts[chatMode] }, ...chatHistory],
-      500,
-      (_chunk, full) => {
-        if (!started) { started = true; botMsg.textContent = ''; }
-        botMsg.textContent = full;
-        msgs.scrollTop = msgs.scrollHeight;
-      }
-    );
+  const doFinish = (reply) => {
     chatHistory.push({ role: 'assistant', content: reply });
-
-    // Post-process corrections mode
     if (chatMode === 'corrections') {
       const lines = reply.split('\n').map(l => l.trim()).filter(Boolean);
       const corrIdx = lines.findIndex(l => l.toUpperCase().startsWith('CORRECTION:'));
@@ -1442,8 +1430,6 @@ async function sendChat() {
         return;
       }
     }
-
-    // Add listen button
     const listenBtn = document.createElement('button');
     listenBtn.className = 'speak-btn';
     listenBtn.textContent = '🔊 Listen';
@@ -1451,14 +1437,35 @@ async function sendChat() {
     botWrap.appendChild(listenBtn);
     if (ttsEnabled) speak(reply);
     msgs.scrollTop = msgs.scrollHeight;
+  };
 
-  } catch(e) {
-    botWrap.remove();
-    const errWrap = document.createElement('div');
-    errWrap.className = 'msg-wrap bot-wrap';
-    errWrap.innerHTML = '<div class="msg bot" style="color:var(--danger)">Connection error — please try again.</div>';
-    msgs.appendChild(errWrap);
-    msgs.scrollTop = msgs.scrollHeight;
+  try {
+    let started = false;
+    const reply = await callAIStream(
+      [{ role: 'system', content: systemPrompts[chatMode] }, ...chatHistory],
+      500,
+      (_chunk, full) => {
+        if (!started) { started = true; botMsg.textContent = ''; }
+        botMsg.textContent = full;
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+    );
+    doFinish(reply);
+  } catch(streamErr) {
+    // Streaming failed — fall back to normal (non-streaming) call
+    botMsg.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;margin:2px 4px"></div>';
+    try {
+      const reply = await callAI([{ role: 'system', content: systemPrompts[chatMode] }, ...chatHistory], 500);
+      botMsg.textContent = reply;
+      doFinish(reply);
+    } catch(e) {
+      botWrap.remove();
+      const errWrap = document.createElement('div');
+      errWrap.className = 'msg-wrap bot-wrap';
+      errWrap.innerHTML = `<div class="msg bot" style="color:var(--danger)">⚠️ ${escHtml(e.message)}</div>`;
+      msgs.appendChild(errWrap);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
   }
 }
 

@@ -2214,19 +2214,27 @@ async function toggleRecording() {
       document.getElementById('micStatus').textContent = interim;
       highlightLive(interim);
     }
-    if (final) { lastInterim = final; }
+    if (final) {
+      lastInterim = '';
+      stopPronRecording();
+      evaluatePronunciation(final); // Android: finale Ergebnisse kommen hier
+    }
   };
   pronRecognition.onerror = (e) => { stopPronRecording(); if (e.error !== 'aborted') setPronError(e.error); };
   pronRecognition.onend = () => {
-    const t = lastInterim;
-    lastInterim = '';
-    stopPronRecording();
-    if (t) {
+    if (lastInterim) {
+      // iOS: nur Interim-Ergebnisse, kein Final — hier auswerten
+      const t = lastInterim;
+      lastInterim = '';
+      stopPronRecording();
       evaluatePronunciation(t);
-    } else if (!gotAnyResult) {
-      const hint = document.getElementById('micHint');
-      hint.style.display = 'block';
-      hint.textContent = 'Nichts gehört — bitte nochmals sprechen und Mikrofon-Erlaubnis prüfen.';
+    } else if (isRecording) {
+      stopPronRecording();
+      if (!gotAnyResult) {
+        const hint = document.getElementById('micHint');
+        hint.style.display = 'block';
+        hint.textContent = 'Nichts gehört — Mikrofon-Erlaubnis prüfen und nochmals versuchen.';
+      }
     }
   };
 

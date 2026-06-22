@@ -2177,10 +2177,19 @@ async function toggleRecording() {
     if (pronRecognition) pronRecognition.abort();
     stopPronRecording(); return;
   }
-  if (!SR) { showIOSHint('speak'); return; }
+  // iOS PWA (home-screen app) uses WKWebView which blocks speech recognition
+  if (!SR || (isIOS && window.navigator.standalone)) {
+    const hint = document.getElementById('micHint');
+    hint.style.display = 'block';
+    hint.innerHTML = isIOS
+      ? '🍎 <b>iPhone:</b> Öffne diese App im <b>Safari-Browser</b> (nicht als Home-Screen-App) für die Spracherkennung.'
+      : 'Spracherkennung wird von diesem Browser nicht unterstützt. Bitte Chrome oder Safari verwenden.';
+    return;
+  }
 
   speechSynthesis.cancel();
   isRecording = true; lastInterim = '';
+  let gotAnyResult = false;
   document.getElementById('micBtn').classList.add('recording');
   document.getElementById('micBtn').textContent = '⏹';
   document.getElementById('micStatus').textContent = 'Listening — speak now!';
@@ -2194,6 +2203,7 @@ async function toggleRecording() {
   pronRecognition.interimResults = true;
 
   pronRecognition.onresult = (e) => {
+    gotAnyResult = true;
     let interim = '', final = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) final += e.results[i][0].transcript;
@@ -2204,12 +2214,20 @@ async function toggleRecording() {
       document.getElementById('micStatus').textContent = interim;
       highlightLive(interim);
     }
-    if (final) { lastInterim = ''; stopPronRecording(); evaluatePronunciation(final); }
+    if (final) { lastInterim = final; }
   };
-  pronRecognition.onerror = (e) => { stopPronRecording(); setPronError(e.error); };
-  pronRecognition.onend   = () => {
-    if (lastInterim) { const t = lastInterim; lastInterim = ''; stopPronRecording(); evaluatePronunciation(t); }
-    else if (isRecording) stopPronRecording();
+  pronRecognition.onerror = (e) => { stopPronRecording(); if (e.error !== 'aborted') setPronError(e.error); };
+  pronRecognition.onend = () => {
+    const t = lastInterim;
+    lastInterim = '';
+    stopPronRecording();
+    if (t) {
+      evaluatePronunciation(t);
+    } else if (!gotAnyResult) {
+      const hint = document.getElementById('micHint');
+      hint.style.display = 'block';
+      hint.textContent = 'Nichts gehört — bitte nochmals sprechen und Mikrofon-Erlaubnis prüfen.';
+    }
   };
 
   try { pronRecognition.start(); }
@@ -2268,8 +2286,14 @@ function buildWordDiff(target, spoken) {
 }
 
 function evaluatePronunciation(transcript) {
+  if (!transcript || !transcript.trim()) return;
+  try { _doEvaluatePronunciation(transcript); }
+  catch(err) { showToast('Auswertungsfehler: ' + err.message); console.error(err); }
+}
+
+function _doEvaluatePronunciation(transcript) {
   const result = document.getElementById('pronResult');
-  result.style.display = 'flex'; result.style.flexDirection = 'column'; result.style.gap = '14px';
+  result.style.cssText = 'display:flex;flex-direction:column;gap:14px;align-items:center';
 
   // Color the sentence spans
   applyFinalSpanColors(transcript);

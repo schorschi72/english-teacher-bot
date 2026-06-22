@@ -1133,6 +1133,7 @@ function updateApiKeyUI() {
 }
 
 async function callAI(messages, maxTokens = 400) {
+  _cancelBgAI(); // abort any running background word-translation calls first
   const key = getApiKey();
   if (!key) {
     switchTab('home', document.querySelector('.nav-btn'));
@@ -2803,6 +2804,7 @@ function writeReset() {
 // ── DICTATION ──
 let dictSentence = '';
 let lastDictLevel = 'random';
+const _usedDictSentences = [];
 
 async function startDictation(level) {
   lastDictLevel = level;
@@ -2810,12 +2812,15 @@ async function startDictation(level) {
   document.getElementById('dictLoadingCard').style.display = 'flex';
   document.getElementById('dictCard').style.display = 'none';
   const lvl = level === 'random' ? ['B1','B2','C1'][Math.floor(Math.random()*3)] : level;
-  const seed = Math.floor(Math.random()*99999);
+  const avoidClause = _usedDictSentences.length
+    ? `\nDo NOT use any of these sentences again:\n${_usedDictSentences.map(s=>`- "${s}"`).join('\n')}` : '';
   try {
     dictSentence = await callAI([{role:'user',content:
-      `Write ONE natural English sentence at CEFR ${lvl} level for a dictation exercise. seed:${seed}
+      `Write ONE natural English sentence at CEFR ${lvl} level for a dictation exercise.${avoidClause}
 Return ONLY the sentence, nothing else. No quotes. 8–16 words.`}], 80);
     dictSentence = dictSentence.trim().replace(/^["']|["']$/g,'');
+    _usedDictSentences.push(dictSentence);
+    if (_usedDictSentences.length > 10) _usedDictSentences.shift();
     document.getElementById('dictLoadingCard').style.display = 'none';
     document.getElementById('dictCard').style.display = 'flex';
     document.getElementById('dictInput').value = '';
@@ -2873,21 +2878,25 @@ let buildGermanText = '';
 let lastBuildLevel = 'B1';
 let buildScore = 0;
 let buildTotal = 0;
+const _usedBuildSentences = [];
 
 async function startBuild(level) {
   lastBuildLevel = level;
   document.getElementById('buildIntro').style.display = 'none';
   document.getElementById('buildLoadingCard').style.display = 'flex';
   document.getElementById('buildCard').style.display = 'none';
-  const seed = Math.floor(Math.random()*99999);
+  const avoidClause = _usedBuildSentences.length
+    ? `\nDo NOT use any of these sentences again:\n${_usedBuildSentences.map(s=>`- "${s}"`).join('\n')}` : '';
   try {
     const raw = await callAI([{role:'user',content:
-      `Create ONE English sentence at CEFR ${level} level for a word-order exercise. seed:${seed}
+      `Create ONE English sentence at CEFR ${level} level for a word-order exercise.${avoidClause}
 Return ONLY valid JSON:
 {"sentence":"She has been working here for three years.","german":"Sie arbeitet hier seit drei Jahren."}`}], 120);
     const data = JSON.parse(extractJSON(raw,'object'));
     buildCorrect = data.sentence.trim();
     buildGermanText = data.german.trim();
+    _usedBuildSentences.push(buildCorrect);
+    if (_usedBuildSentences.length > 10) _usedBuildSentences.shift();
     buildWords = buildCorrect.replace(/[.,!?]/g,'').split(/\s+/).sort(() => Math.random()-0.5);
     buildPlaced = [];
     document.getElementById('buildLoadingCard').style.display = 'none';
@@ -3607,7 +3616,13 @@ function _renderWordPopupTrans(cached) {
     (cached.example ? `<br><span style="font-size:12px;color:var(--text-muted);font-style:italic">${escHtml(cached.example)}</span>` : '');
 }
 
-// Lightweight single-attempt AI call for quick lookups (word popup, selection)
+// Global controller for background (non-critical) AI calls.
+// callAI() aborts this when a main call starts, preventing rate-limit conflicts.
+let _bgAbortCtrl = new AbortController();
+function _cancelBgAI() { _bgAbortCtrl.abort(); _bgAbortCtrl = new AbortController(); }
+
+// Lightweight single-attempt AI call for quick lookups (word popup, selection).
+// Uses _bgAbortCtrl so it can be cancelled by any main callAI() invocation.
 async function _callAIOnce(messages, maxTokens) {
   const key = getApiKey();
   if (!key) throw new Error('no key');
@@ -3615,18 +3630,28 @@ async function _callAIOnce(messages, maxTokens) {
   const body = { contents: geminiMessages, generationConfig: { maxOutputTokens: Math.max(maxTokens, 256), temperature: 0.3 } };
   const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
   for (const model of MODELS) {
+    if (_bgAbortCtrl.signal.aborted) throw new Error('cancelled');
     const ctrl = new AbortController();
+    // Link to global bg controller
+    const onAbort = () => ctrl.abort();
+    _bgAbortCtrl.signal.addEventListener('abort', onAbort, { once: true });
     const timer = setTimeout(() => ctrl.abort(), 8000);
     try {
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
         { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), signal: ctrl.signal });
       clearTimeout(timer);
+      _bgAbortCtrl.signal.removeEventListener('abort', onAbort);
       if (res.status === 429 || res.status === 503 || res.status === 403) continue;
       if (!res.ok) continue;
       const data = await res.json();
       const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (content) return content;
-    } catch(e) { clearTimeout(timer); if (e.name !== 'AbortError') continue; }
+    } catch(e) {
+      clearTimeout(timer);
+      _bgAbortCtrl.signal.removeEventListener('abort', onAbort);
+      if (e.name === 'AbortError') throw new Error('cancelled');
+      continue;
+    }
   }
   throw new Error('unavailable');
 }

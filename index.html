@@ -432,7 +432,7 @@
         <input id="newWord" placeholder="English word or phrase" />
         <input id="newTranslation" placeholder="German translation" />
         <button class="btn" onclick="addVocab()">+ Add</button>
-        <button class="btn secondary" onclick="generateVocab()">✨ AI: Suggest words for my interests</button>
+        <button class="btn secondary" onclick="generateVocab(this)">✨ AI: 5 Wörter vorschlagen</button>
       </div>
     </div>
     <div id="vocabListWrap" style="display:none">
@@ -1514,23 +1514,23 @@ function deleteVocab(i) {
   localStorage.setItem('vocab', JSON.stringify(vocab));
   renderVocabStats();
 }
-async function generateVocab() {
-  const btn = event.target;
+async function generateVocab(btn) {
+  if (!btn) btn = document.querySelector('[onclick*="generateVocab"]');
   btn.disabled = true; btn.textContent = '⏳ Generating...';
   try {
-    const existing = vocab.map(v => v.word).join(', ');
+    const existing = vocab.map(v => v.word).slice(-30).join(', ');
     const activeInterests = getActiveInterests();
-    const topicHint = activeInterests
-      ? `Focus on vocabulary related to these topics: ${activeInterests}.`
-      : '';
-    const avoidHint = existing ? ` Avoid these already-known words: ${existing}.` : '';
-    const prompt = `Give me 5 useful English words or phrases for an intermediate learner. ${topicHint}${avoidHint} Give the German translation for each. Return ONLY a JSON array: [{"word":"(English)","translation":"(Deutsch)","example":"(English example sentence)"}]`;
-    const reply = await callAI([{ role: 'user', content: prompt }], 300);
-    JSON.parse(extractJSON(reply, 'array')).forEach(w => vocab.push({ word: w.word, translation: w.translation, example: w.example, learned: false }));
+    const topicHint = activeInterests ? `Focus on topics: ${activeInterests}.` : '';
+    const avoidHint = existing ? ` Avoid: ${existing}.` : '';
+    const prompt = `Give me 5 useful English words for an intermediate learner. ${topicHint}${avoidHint} Return ONLY valid JSON array:\n[{"word":"endeavour","translation":"Bemühen","example":"Her endeavour paid off."}]`;
+    const reply = await callAI([{ role: 'user', content: prompt }], 400);
+    const words = JSON.parse(extractJSON(reply, 'array'));
+    words.forEach(w => { if (w.word && w.translation) vocab.push({ word: w.word, translation: w.translation, example: w.example || '', learned: false }); });
     localStorage.setItem('vocab', JSON.stringify(vocab));
     renderVocabStats();
-  } catch(e) { alert('Error: ' + e.message); }
-  btn.disabled = false; btn.textContent = '✨ AI: Suggest 5 words';
+    showNextCard();
+  } catch(e) { alert('Fehler: ' + e.message); }
+  btn.disabled = false; btn.textContent = '✨ AI: 5 Wörter vorschlagen';
 }
 
 // ── GRAMMAR ──
@@ -1985,8 +1985,19 @@ async function evaluatePronunciation(transcript) {
       '🗣 You said: "' + escHtml(transcript) + '"' + (tipText ? '<br><br>💡 ' + escHtml(tipText) : '');
     if (ttsEnabled && data.feedback) speak(data.feedback + (data.tip ? ' ' + data.tip : ''));
   } catch(e) {
-    document.getElementById('pronFeedback').textContent = 'Could not evaluate — please try again.';
-    document.getElementById('scoreNum').textContent = '?';
+    // Fallback: local score from word diff
+    const tWords = normalise(currentPronSentence).split(/\s+/);
+    const sWords = normalise(transcript).split(/\s+/);
+    const matches = tWords.filter(w => sWords.includes(w)).length;
+    const fallbackScore = tWords.length ? Math.round(matches / tWords.length * 100) : 0;
+    const color = fallbackScore >= 80 ? '#10B981' : fallbackScore >= 50 ? '#F59E0B' : '#EF4444';
+    document.getElementById('scoreNum').textContent = fallbackScore + '%';
+    document.getElementById('scoreRing').style.background = `conic-gradient(${color} ${fallbackScore}%, var(--surface2) 0%)`;
+    document.getElementById('scoreNum').style.color = color;
+    document.getElementById('pronFeedback').textContent = fallbackScore >= 80
+      ? 'Great job! Most words were correct.' : fallbackScore >= 50
+      ? 'Good effort! Keep practising the highlighted words.'
+      : 'Keep going — practise the sentence slowly first.';
   }
 }
 
@@ -2773,6 +2784,7 @@ function switchSkillsMode(mode) {
     document.getElementById(`skills${m.charAt(0).toUpperCase()+m.slice(1)}Btn`).classList.toggle('active', mode===m);
     document.getElementById(`skills${m.charAt(0).toUpperCase()+m.slice(1)}Panel`).style.display = mode===m?'flex':'none';
   });
+  if (mode === 'read') readReset();
 }
 
 // ── PROGRESS DASHBOARD ──

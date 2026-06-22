@@ -332,6 +332,16 @@
   .level-bar-fill.pass { background: var(--accent); }
   /* Word of Day */
   .wotd-card { background: linear-gradient(135deg, #1e1b4b, #312e81); border: 1px solid #4F46E5; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  /* Word tap popup */
+  #wordPopup {
+    position: fixed; z-index: 9999; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    min-width: 200px; max-width: 280px; display: none; flex-direction: column; gap: 10px;
+  }
+  #wordPopup .pw-word { font-size: 20px; font-weight: 800; color: var(--primary-light); }
+  #wordPopup .pw-trans { font-size: 15px; color: var(--text-muted); min-height: 20px; }
+  .tappable-word { cursor: pointer; border-radius: 3px; transition: background 0.15s; }
+  .tappable-word:hover, .tappable-word:active { background: #1e1b4b; color: var(--primary-light); }
   .wotd-word { font-size: 24px; font-weight: 900; color: var(--primary-light); }
   /* Due badge */
   .due-badge { background: #7C3AED; color: white; border-radius: 99px; font-size: 10px; font-weight: 700; padding: 2px 7px; margin-left: 6px; }
@@ -358,16 +368,6 @@
 
   <!-- CHAT -->
   <div class="tab-content active" id="tab-chat">
-    <div id="wotdCard" class="wotd-card" style="display:none">
-      <div style="font-size:11px;font-weight:700;color:#818CF8;letter-spacing:1px">WORT DES TAGES</div>
-      <div class="wotd-word" id="wotdWord"></div>
-      <div style="font-size:13px;color:#C7D2FE" id="wotdTranslation"></div>
-      <div style="font-size:13px;color:#A5B4FC;font-style:italic" id="wotdExample"></div>
-      <div style="display:flex;gap:8px;margin-top:4px">
-        <button class="listen-btn" style="font-size:12px;padding:5px 12px" onclick="speak(document.getElementById('wotdWord').textContent)">🔊 Listen</button>
-        <button class="listen-btn slow" style="font-size:12px;padding:5px 12px" onclick="addWotdToVocab()">+ Vocab</button>
-      </div>
-    </div>
     <div class="chip-row">
       <div class="chip active" data-mode="freeChat" onclick="setMode(this)">💬 Free Talk</div>
       <div class="chip" data-mode="corrections" onclick="setMode(this)">✏️ Correct me</div>
@@ -499,13 +499,15 @@
     </div>
   </div>
 
-  <!-- GRAMMAR -->
-  <div class="tab-content" id="tab-grammar">
+  <!-- PRACTICE: Grammar + Writing + Dictation -->
+  <div class="tab-content" id="tab-practice">
     <!-- Mode switcher -->
-    <div style="display:flex;gap:8px">
-      <button class="grammar-mode-btn active" id="modeQuizBtn" onclick="switchGrammarMode('quiz')">📚 Quiz</button>
-      <button class="grammar-mode-btn" id="modeFillBtn" onclick="switchGrammarMode('fill')">📄 Fill-in</button>
-      <button class="grammar-mode-btn" id="modeBuildBtn" onclick="switchGrammarMode('build')">🧩 Satz</button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="grammar-mode-btn active" id="modeQuizBtn" onclick="switchPracticeMode('quiz')" style="flex:1;min-width:0;font-size:12px">📚 Quiz</button>
+      <button class="grammar-mode-btn" id="modeFillBtn" onclick="switchPracticeMode('fill')" style="flex:1;min-width:0;font-size:12px">📄 Fill-in</button>
+      <button class="grammar-mode-btn" id="modeBuildBtn" onclick="switchPracticeMode('build')" style="flex:1;min-width:0;font-size:12px">🧩 Satz</button>
+      <button class="grammar-mode-btn" id="modeWriteBtn" onclick="switchPracticeMode('write')" style="flex:1;min-width:0;font-size:12px">✍️ Text</button>
+      <button class="grammar-mode-btn" id="modeDictBtn" onclick="switchPracticeMode('dict')" style="flex:1;min-width:0;font-size:12px">🎧 Diktat</button>
     </div>
 
     <!-- QUIZ mode -->
@@ -571,19 +573,90 @@
         </div>
       </div>
     </div>
+
+    <!-- WRITING (in Practice tab) -->
+    <div id="skillsWritePanel" style="display:none;flex-direction:column;gap:12px">
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div class="section-title">✍️ Writing Correction</div>
+        <div style="color:var(--text-muted);font-size:13px">Schreib einen englischen Text — die KI korrigiert jeden Fehler mit Erklärung.</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="writePromptChips">
+          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Describe your typical day.')">My day</button>
+          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Write about a recent trip or holiday.')">Travel</button>
+          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Describe your job or studies.')">Work/Study</button>
+          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Write your opinion on social media.')">Opinion</button>
+        </div>
+        <div id="writePromptHint" style="font-size:13px;color:var(--primary-light);display:none"></div>
+        <textarea class="write-area" id="writeInput" placeholder="Write your text here in English…" oninput="writeInputChanged()"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span id="writeWordCount" style="font-size:12px;color:var(--text-muted)">0 words</span>
+          <button class="btn" id="writeCheckBtn" onclick="checkWriting()" disabled>✓ Correct my text</button>
+        </div>
+      </div>
+      <div class="card" id="writeLoadingCard" style="display:none;text-align:center;padding:24px;flex-direction:column;gap:10px;align-items:center">
+        <div class="spinner" style="width:32px;height:32px;border-width:4px"></div>
+        <div style="font-size:14px;color:var(--text-muted)">Wird korrigiert…</div>
+      </div>
+      <div class="card" id="writeResultCard" style="display:none;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="section-title">Corrections</div>
+          <span class="badge blue" id="writeErrorCount"></span>
+        </div>
+        <div id="writeCorrections"></div>
+        <div class="card" style="background:var(--surface2);padding:14px;gap:8px;display:flex;flex-direction:column">
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted)">CORRECTED VERSION</div>
+          <div id="writeCorrectedText" style="font-size:15px;line-height:1.7"></div>
+          <button class="listen-btn" onclick="speak(document.getElementById('writeCorrectedText').textContent)">🔊 Listen</button>
+        </div>
+        <button class="btn secondary" onclick="writeReset()">✍️ New text</button>
+      </div>
+    </div>
+
+    <!-- DICTATION (in Practice tab) -->
+    <div id="skillsDictPanel" style="display:none;flex-direction:column;gap:12px">
+      <div class="card" id="dictIntro" style="padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
+        <div style="font-size:36px">🎧</div>
+        <div class="section-title">Diktat</div>
+        <div style="color:var(--text-muted);font-size:14px">Höre den Satz und tippe ihn ab. Auf Großschreibung und Satzzeichen wird nicht geachtet.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('B1')">B1</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('B2')">B2</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('C1')">C1</button>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('random')">🎲 Zufällig</button>
+        </div>
+      </div>
+      <div class="card" id="dictLoadingCard" style="display:none;text-align:center;padding:24px;flex-direction:column;gap:10px;align-items:center">
+        <div class="spinner" style="width:32px;height:32px;border-width:4px"></div>
+        <div style="font-size:14px;color:var(--text-muted)">Satz wird generiert…</div>
+      </div>
+      <div class="card" id="dictCard" style="display:none;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button class="listen-btn" onclick="dictPlay(1.0)">🔊 Play</button>
+          <button class="listen-btn slow" onclick="dictPlay(0.65)">🐢 Slow</button>
+          <button class="listen-btn slow" onclick="dictPlay(0.5)">🐌 Very slow</button>
+        </div>
+        <input class="dictation-input" id="dictInput" placeholder="Type what you hear…" oninput="dictInputChanged()" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+        <button class="btn" id="dictCheckBtn" onclick="checkDictation()" disabled>✓ Check</button>
+        <div id="dictResult" style="display:none;flex-direction:column;gap:10px">
+          <div id="dictResultText" style="font-size:15px;line-height:1.8"></div>
+          <div id="dictExplanation" class="explanation" style="display:none"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="startDictation(lastDictLevel)">🔄 Neuer Satz</button>
+            <button class="btn secondary" onclick="dictIntroReset()">← Zurück</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- SKILLS: LISTENING + WRITING -->
-  <div class="tab-content" id="tab-skills">
+  <!-- LESEN & HÖREN -->
+  <div class="tab-content" id="tab-readlisten">
     <div style="display:flex;gap:8px">
-      <button class="skills-mode-btn active" id="skillsListenBtn" onclick="switchSkillsMode('listen')">👂 Listen</button>
-      <button class="skills-mode-btn" id="skillsWriteBtn" onclick="switchSkillsMode('write')">✍️ Write</button>
-      <button class="skills-mode-btn" id="skillsDictBtn" onclick="switchSkillsMode('dict')">🎧 Diktat</button>
-      <button class="skills-mode-btn" id="skillsReadBtn" onclick="switchSkillsMode('read')">📖 Reading</button>
+      <button class="skills-mode-btn active" id="rlReadBtn" onclick="switchReadListenMode('read')">📖 Lesen</button>
+      <button class="skills-mode-btn" id="rlListenBtn" onclick="switchReadListenMode('listen')">👂 Hören</button>
     </div>
 
     <!-- LISTENING -->
-    <div id="skillsListenPanel" style="display:flex;flex-direction:column;gap:12px">
+    <div id="skillsListenPanel" style="display:none;flex-direction:column;gap:12px">
       <div class="card" id="listenIntro" style="padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
         <div style="font-size:36px">👂</div>
         <div class="section-title">Listening Comprehension</div>
@@ -621,81 +694,8 @@
       </div>
     </div>
 
-    <!-- WRITING -->
-    <div id="skillsWritePanel" style="display:none;flex-direction:column;gap:12px">
-      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
-        <div class="section-title">✍️ Writing Correction</div>
-        <div style="color:var(--text-muted);font-size:13px">Schreib einen englischen Text — die KI korrigiert jeden Fehler mit Erklärung.</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap" id="writePromptChips">
-          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Describe your typical day.')">My day</button>
-          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Write about a recent trip or holiday.')">Travel</button>
-          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Describe your job or studies.')">Work/Study</button>
-          <button class="btn secondary" style="font-size:12px;padding:5px 10px" onclick="setWritePrompt('Write your opinion on social media.')">Opinion</button>
-        </div>
-        <div id="writePromptHint" style="font-size:13px;color:var(--primary-light);display:none"></div>
-        <textarea class="write-area" id="writeInput" placeholder="Write your text here in English…" oninput="writeInputChanged()"></textarea>
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span id="writeWordCount" style="font-size:12px;color:var(--text-muted)">0 words</span>
-          <button class="btn" id="writeCheckBtn" onclick="checkWriting()" disabled>✓ Correct my text</button>
-        </div>
-      </div>
-      <div class="card" id="writeLoadingCard" style="display:none;text-align:center;padding:24px;flex-direction:column;gap:10px;align-items:center">
-        <div class="spinner" style="width:32px;height:32px;border-width:4px"></div>
-        <div style="font-size:14px;color:var(--text-muted)">Wird korrigiert…</div>
-      </div>
-      <div class="card" id="writeResultCard" style="display:none;flex-direction:column;gap:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div class="section-title">Corrections</div>
-          <span class="badge blue" id="writeErrorCount"></span>
-        </div>
-        <div id="writeCorrections"></div>
-        <div class="card" style="background:var(--surface2);padding:14px;gap:8px;display:flex;flex-direction:column">
-          <div style="font-size:12px;font-weight:700;color:var(--text-muted)">CORRECTED VERSION</div>
-          <div id="writeCorrectedText" style="font-size:15px;line-height:1.7"></div>
-          <button class="listen-btn" onclick="speak(document.getElementById('writeCorrectedText').textContent)">🔊 Listen</button>
-        </div>
-        <button class="btn secondary" onclick="writeReset()">✍️ New text</button>
-      </div>
-    </div>
-
-    <!-- DICTATION -->
-    <div id="skillsDictPanel" style="display:none;flex-direction:column;gap:12px">
-      <div class="card" id="dictIntro" style="padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
-        <div style="font-size:36px">🎧</div>
-        <div class="section-title">Diktat</div>
-        <div style="color:var(--text-muted);font-size:14px">Höre den Satz und tippe ihn ab. Auf Großschreibung und Satzzeichen wird nicht geachtet.</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('B1')">B1</button>
-          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('B2')">B2</button>
-          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('C1')">C1</button>
-          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startDictation('random')">🎲 Zufällig</button>
-        </div>
-      </div>
-      <div class="card" id="dictLoadingCard" style="display:none;text-align:center;padding:24px;flex-direction:column;gap:10px;align-items:center">
-        <div class="spinner" style="width:32px;height:32px;border-width:4px"></div>
-        <div style="font-size:14px;color:var(--text-muted)">Satz wird generiert…</div>
-      </div>
-      <div class="card" id="dictCard" style="display:none;flex-direction:column;gap:12px">
-        <div style="display:flex;gap:8px;justify-content:center">
-          <button class="listen-btn" onclick="dictPlay(1.0)">🔊 Play</button>
-          <button class="listen-btn slow" onclick="dictPlay(0.65)">🐢 Slow</button>
-          <button class="listen-btn slow" onclick="dictPlay(0.5)">🐌 Very slow</button>
-        </div>
-        <input class="dictation-input" id="dictInput" placeholder="Type what you hear…" oninput="dictInputChanged()" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-        <button class="btn" id="dictCheckBtn" onclick="checkDictation()" disabled>✓ Check</button>
-        <div id="dictResult" style="display:none;flex-direction:column;gap:10px">
-          <div id="dictResultText" style="font-size:15px;line-height:1.8"></div>
-          <div id="dictExplanation" class="explanation" style="display:none"></div>
-          <div style="display:flex;gap:8px">
-            <button class="btn" onclick="startDictation(lastDictLevel)">🔄 Neuer Satz</button>
-            <button class="btn secondary" onclick="dictIntroReset()">← Zurück</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- READING -->
-    <div id="skillsReadPanel" style="display:none;flex-direction:column;gap:12px">
+    <div id="skillsReadPanel" style="display:flex;flex-direction:column;gap:12px">
       <div class="card" id="readIntro" style="padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
         <div style="font-size:36px">📖</div>
         <div class="section-title">Reading Comprehension</div>
@@ -729,9 +729,20 @@
     </div>
   </div>
 
-  <!-- PROGRESS DASHBOARD -->
-  <div class="tab-content" id="tab-progress">
-    <div class="section-title">📊 Mein Fortschritt</div>
+  <!-- HOME DASHBOARD -->
+  <div class="tab-content" id="tab-home">
+    <!-- Word of Day -->
+    <div id="wotdCard" class="wotd-card" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:#818CF8;letter-spacing:1px">WORT DES TAGES</div>
+      <div class="wotd-word" id="wotdWord"></div>
+      <div style="font-size:13px;color:#C7D2FE" id="wotdTranslation"></div>
+      <div style="font-size:13px;color:#A5B4FC;font-style:italic" id="wotdExample"></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="listen-btn" style="font-size:12px;padding:5px 12px" onclick="speak(document.getElementById('wotdWord').textContent)">🔊 Listen</button>
+        <button class="listen-btn slow" style="font-size:12px;padding:5px 12px" onclick="addWotdToVocab()">+ Vocab</button>
+      </div>
+    </div>
+    <!-- Daily goal -->
     <div class="card" style="padding:14px;gap:8px;display:flex;flex-direction:column">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:13px;font-weight:700">🎯 Tagesziel: <span id="pgGoalDone">0</span> / <span id="pgGoalTarget">10</span> Wörter</div>
@@ -743,12 +754,24 @@
       <div class="goal-bar"><div class="goal-bar-fill" id="pgGoalBar" style="width:0%"></div></div>
       <div id="pgGoalMsg" style="font-size:12px;color:var(--text-muted)"></div>
     </div>
+    <!-- Stats grid -->
     <div class="stat-grid">
       <div class="stat-card"><div class="big" id="pgTotal">0</div><div class="lbl">Vokabeln</div></div>
       <div class="stat-card"><div class="big" id="pgLearned">0</div><div class="lbl">Gelernt</div></div>
       <div class="stat-card"><div class="big" id="pgStreak">0</div><div class="lbl">Streak 🔥</div></div>
       <div class="stat-card"><div class="big" id="pgDays">0</div><div class="lbl">Lerntage</div></div>
     </div>
+    <!-- Quick actions -->
+    <div class="section-title">Schnellstart</div>
+    <div class="scenario-grid">
+      <button class="scenario-btn" onclick="switchTabByName('chat')">💬<br>Chat</button>
+      <button class="scenario-btn" onclick="switchTabByName('vocab')">📖<br>Vokabeln</button>
+      <button class="scenario-btn" onclick="switchTabByName('practice')">✏️<br>Üben</button>
+      <button class="scenario-btn" onclick="switchTabByName('readlisten')">📚<br>Lesen</button>
+      <button class="scenario-btn" onclick="switchTabByName('pronunciation')">🎤<br>Sprechen</button>
+      <button class="scenario-btn" onclick="startPlacementTestFromHome()">🎓<br>Niveau-Test</button>
+    </div>
+    <!-- Vocab status bars -->
     <div class="card" style="padding:16px;gap:10px;display:flex;flex-direction:column">
       <div class="section-title" style="font-size:14px">Vokabeln nach Status</div>
       <div class="level-bar-row">
@@ -767,14 +790,12 @@
         <span id="pgBarNewN" style="font-size:12px;color:var(--text-muted);width:30px;text-align:right">0</span>
       </div>
     </div>
+    <!-- Due words -->
     <div class="card" style="padding:16px;gap:10px;display:flex;flex-direction:column">
       <div class="section-title" style="font-size:14px">Nächste zu lernende Wörter</div>
       <div id="pgDueWords" style="font-size:14px;color:var(--text-muted)">Noch keine Vokabeln vorhanden.</div>
     </div>
-    <div class="card" style="padding:16px;gap:8px;display:flex;flex-direction:column">
-      <div class="section-title" style="font-size:14px">Grammar — Tipps</div>
-      <div id="pgGrammarTip" style="font-size:14px;color:var(--text-muted);line-height:1.6"></div>
-    </div>
+    <!-- Weaknesses -->
     <div class="card" style="padding:16px;gap:12px;display:flex;flex-direction:column">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div class="section-title" style="font-size:14px">🎯 Meine Schwächen</div>
@@ -791,41 +812,28 @@
         <div style="font-size:13px;color:var(--text-muted)">KI analysiert deine Schwächen…</div>
       </div>
     </div>
-  </div>
-
-  <!-- SENTENCE BUILDER (modal-style overlay panel inside Grammar tab) -->
-
-  <!-- PLACEMENT TEST -->
-  <div class="tab-content" id="tab-test">
-    <div class="card" id="testIntro" style="text-align:center;padding:28px;display:flex;flex-direction:column;gap:14px;align-items:center">
-      <div style="font-size:48px">🎓</div>
-      <div class="section-title">Placement Test</div>
-      <div style="color:var(--text-muted);font-size:14px;line-height:1.6;max-width:300px">
-        20 Fragen zu Grammatik, Vokabular und Idiomen.<br>
-        Resultat: <strong style="color:var(--primary-light)">B1 · B2 · C1 · C2</strong>
-      </div>
-      <button class="btn" style="margin-top:8px" onclick="startPlacementTest()">▶ Test starten</button>
+    <!-- Grammar tip -->
+    <div class="card" style="padding:16px;gap:8px;display:flex;flex-direction:column">
+      <div class="section-title" style="font-size:14px">💡 Grammar-Tipp</div>
+      <div id="pgGrammarTip" style="font-size:14px;color:var(--text-muted);line-height:1.6"></div>
     </div>
-
+    <!-- Placement test (hidden cards, shown when started) -->
+    <div id="testIntro" style="display:none"></div>
     <div id="testLoadingCard" class="card" style="display:none;text-align:center;padding:32px;gap:14px;flex-direction:column;align-items:center">
       <div class="spinner" style="width:40px;height:40px;border-width:4px"></div>
       <div style="color:var(--text-muted);font-size:14px">Fragen werden generiert…</div>
     </div>
-
     <div id="testQuestionCard" class="card" style="display:none;flex-direction:column;gap:14px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <span class="badge blue" id="testLevelBadge">B1</span>
         <span style="font-size:13px;color:var(--text-muted)" id="testCounter">1 / 20</span>
       </div>
-      <div class="progress-bar-wrap">
-        <div class="progress-bar-fill" id="testProgress" style="width:5%"></div>
-      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="testProgress" style="width:5%"></div></div>
       <div id="testQuestion" style="font-size:16px;font-weight:600;line-height:1.5"></div>
       <div id="testOptions"></div>
       <div id="testExplanation" class="explanation" style="display:none"></div>
       <button class="btn" id="testNextBtn" style="display:none" onclick="testNext()">Weiter →</button>
     </div>
-
     <div id="testResultCard" class="card" style="display:none;flex-direction:column;gap:16px;align-items:center;padding:28px">
       <div style="font-size:32px">🎓</div>
       <div style="font-size:16px;color:var(--text-muted)">Dein Niveau:</div>
@@ -868,16 +876,28 @@
 
 </div>
 
+<!-- Word tap popup -->
+<div id="wordPopup">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div class="pw-word" id="pwWord"></div>
+    <button onclick="closeWordPopup()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1">✕</button>
+  </div>
+  <div class="pw-trans" id="pwTrans"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div></div>
+  <div style="display:flex;gap:8px">
+    <button class="btn" style="font-size:13px;min-height:38px;padding:8px 12px" onclick="addWordFromPopup()">+ Zu Vocab</button>
+    <button class="btn secondary" style="font-size:13px;min-height:38px;padding:8px 12px" onclick="speak(document.getElementById('pwWord').textContent)">🔊</button>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <div class="footer-label">Für meine Liebe ❤️</div>
   <div class="nav-row">
+    <button class="nav-btn" onclick="switchTab('home', this);renderProgress()"><span class="icon">🏠</span>Start</button>
     <button class="nav-btn active" onclick="switchTab('chat', this)"><span class="icon">💬</span>Chat</button>
     <button class="nav-btn" onclick="switchTab('vocab', this)"><span class="icon">📖</span>Vocab</button>
-    <button class="nav-btn" onclick="switchTab('grammar', this)"><span class="icon">✏️</span>Grammar</button>
+    <button class="nav-btn" onclick="switchTab('practice', this)"><span class="icon">✏️</span>Üben</button>
+    <button class="nav-btn" onclick="switchTab('readlisten', this)"><span class="icon">📚</span>Lesen</button>
     <button class="nav-btn" onclick="switchTab('pronunciation', this)"><span class="icon">🎤</span>Speak</button>
-    <button class="nav-btn" onclick="switchTab('skills', this)"><span class="icon">📚</span>Skills</button>
-    <button class="nav-btn" onclick="switchTab('test', this)"><span class="icon">🎓</span>Test</button>
-    <button class="nav-btn" onclick="switchTab('progress', this);renderProgress()"><span class="icon">📊</span>Stats</button>
   </div>
 </nav>
 
@@ -1067,22 +1087,35 @@ function listenToSentence(rate) {
 }
 
 // ── AI API ──
+const AI_MODELS = ['openai-fast', 'openai', 'mistral'];
 async function callAI(messages, maxTokens = 400) {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 3000));
-    const res = await fetch('https://text.pollinations.ai/openai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'openai', messages, max_tokens: maxTokens, temperature: 0.9, private: true })
-    });
-    if (res.status === 429 || res.status === 500 || res.status === 503) continue;
-    if (!res.ok) throw new Error('API error ' + res.status);
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) continue;
-    return content;
+  const TIMEOUT_MS = 18000;
+  for (let attempt = 0; attempt < AI_MODELS.length * 2; attempt++) {
+    const model = AI_MODELS[attempt % AI_MODELS.length];
+    if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch('https://text.pollinations.ai/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.7, private: true }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (res.status === 429 || res.status === 403 || res.status === 500 || res.status === 503 || res.status === 502) continue;
+      if (!res.ok) continue;
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) continue;
+      return content;
+    } catch(e) {
+      clearTimeout(timer);
+      if (e.name === 'AbortError') continue;
+      if (attempt >= AI_MODELS.length * 2 - 1) throw e;
+    }
   }
-  throw new Error('Bitte kurz warten und nochmals versuchen (Rate limit)');
+  throw new Error('KI antwortet nicht — bitte nochmals versuchen');
 }
 
 // ── TAB NAVIGATION ──
@@ -1090,12 +1123,12 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab-content').forEach(t => { t.classList.remove('active'); t.scrollTop = 0; });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
-  // Ensure chat scrolls to bottom when returning to chat
+  if (btn) btn.classList.add('active');
   if (name === 'chat') {
     const msgs = document.getElementById('chat-messages');
     if (msgs) requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight);
   }
+  if (name === 'home') renderProgress();
 }
 
 // ── CHAT ──
@@ -1206,6 +1239,7 @@ function addBotMessage(text, speakText) {
   const plain = (speakText || text).replace(/<[^>]+>/g, ' ').replace(/💡 Tip:|✏️|⚠️|CORRECTION:/g, '').replace(/\s+/g, ' ').trim();
   wrap.innerHTML = `<div class="msg bot">${text}</div><button class="speak-btn" onclick="speakMsg(this, ${JSON.stringify(plain)})">🔊 Listen</button>`;
   msgs.appendChild(wrap);
+  makeWordsTappable(wrap.querySelector('.msg.bot'));
   if (ttsEnabled) speak(plain);
   msgs.scrollTop = msgs.scrollHeight;
 }
@@ -1586,22 +1620,173 @@ async function generateVocab(btn) {
 
 // ── GRAMMAR ──
 
+const localQuestionBank = {
+  tenses:[
+    {question:"Fill in: She ___ to work every day.",options:["go","goes","going","gone"],correct:1,explanation:"Third person singular present simple takes -s: 'she goes'."},
+    {question:"Which sentence is correct?",options:["I am knowing her for years.","I have known her for years.","I know her since years.","I knew her for years."],correct:1,explanation:"'Have known' (present perfect) is used for states that started in the past and continue now."},
+    {question:"Fill in: By 8am tomorrow, I ___ my report.",options:["will finish","will have finished","am finishing","finished"],correct:1,explanation:"Future perfect ('will have finished') describes an action completed before a future point."},
+    {question:"While she ___ dinner, the phone rang.",options:["cooked","was cooking","has cooked","cooks"],correct:1,explanation:"Past continuous ('was cooking') describes an ongoing action interrupted by another."},
+    {question:"Fill in: He ___ here since 2019.",options:["lives","lived","has lived","is living"],correct:2,explanation:"Present perfect ('has lived') with 'since' for a state that started in the past and continues now."}
+  ],
+  present_perfect:[
+    {question:"Fill in: I ___ never ___ sushi before.",options:["have / eaten","did / eat","had / eaten","am / eating"],correct:0,explanation:"'Have eaten' – present perfect for a life experience up to now."},
+    {question:"Which is correct with 'already'?",options:["She already left.","She has already left.","She already leaves.","She was already left."],correct:1,explanation:"'Already' pairs with present perfect to show something happened sooner than expected."},
+    {question:"Fill in: They ___ the project yet.",options:["didn't finish","haven't finished","don't finish","hadn't finished"],correct:1,explanation:"'Haven't finished yet' – present perfect with 'yet' for an incomplete action."},
+    {question:"Choose the correct sentence:",options:["I have seen her yesterday.","I saw her yesterday.","I have saw her yesterday.","I see her yesterday."],correct:1,explanation:"'Yesterday' is a specific past time, so simple past ('saw') is needed, not present perfect."},
+    {question:"Fill in: How long ___ you ___ English?",options:["do / learn","have / been learning","did / learn","are / learning"],correct:1,explanation:"'Have been learning' – present perfect continuous for an ongoing activity that started in the past."}
+  ],
+  passive:[
+    {question:"Make passive: 'They built this bridge in 1920.'",options:["This bridge built in 1920.","This bridge was built in 1920.","This bridge has been built in 1920.","This bridge is built in 1920."],correct:1,explanation:"Simple past passive: 'was/were + past participle'."},
+    {question:"Fill in: The letter ___ by the manager tomorrow.",options:["will sign","will be signed","is signed","has been signed"],correct:1,explanation:"Future passive: 'will be + past participle'."},
+    {question:"Which sentence is passive?",options:["The dog chased the cat.","The cat was chased by the dog.","The cat chased the dog.","The dog is chasing the cat."],correct:1,explanation:"Passive voice: the subject receives the action ('was chased')."},
+    {question:"Fill in: Mistakes ___ if you're careful.",options:["avoid","can be avoided","are avoiding","can avoid"],correct:1,explanation:"Modal passive: 'modal + be + past participle'."},
+    {question:"Choose the correct passive form of 'Someone is watching us.'",options:["We are watched.","We are being watched.","We were being watched.","We have been watched."],correct:1,explanation:"Present continuous passive: 'am/is/are being + past participle'."}
+  ],
+  conditionals:[
+    {question:"Fill in (real condition): If it ___, we ___ at home.",options:["rains / will stay","will rain / stay","rained / would stay","rains / stay"],correct:0,explanation:"First conditional (real/possible): 'If + present simple, will + infinitive'."},
+    {question:"Fill in (unreal present): If I ___ rich, I ___ travel the world.",options:["am / will","were / would","would be / travel","am / would"],correct:1,explanation:"Second conditional (unreal): 'If + past simple, would + infinitive'. Use 'were' for all subjects."},
+    {question:"Fill in (unreal past): If she ___ harder, she ___ the exam.",options:["studied / would pass","had studied / would have passed","studied / would have passed","has studied / passed"],correct:1,explanation:"Third conditional (unreal past): 'If + past perfect, would have + past participle'."},
+    {question:"Which is a zero conditional?",options:["If I were you, I'd leave.","If you heat water to 100°C, it boils.","If she had known, she would have called.","If it rains, I will stay in."],correct:1,explanation:"Zero conditional states general truths: 'If + present simple, present simple'."},
+    {question:"Fill in: ___ you need help, just call me.",options:["Should","Would","Could","Might"],correct:0,explanation:"'Should you need' = formal inversion of 'If you should need' (third conditional style without 'if')."}
+  ],
+  modals:[
+    {question:"Fill in: You ___ see a doctor — that cough sounds bad.",options:["can","should","would","might"],correct:1,explanation:"'Should' gives advice or recommendation."},
+    {question:"Fill in: She ___ speak three languages when she was ten.",options:["could","should","must","would"],correct:0,explanation:"'Could' expresses past ability."},
+    {question:"Fill in: You ___ smoke in here — it's forbidden.",options:["mustn't","don't have to","needn't","couldn't"],correct:0,explanation:"'Mustn't' = prohibition. 'Don't have to' = no obligation (very different meaning!)."},
+    {question:"Fill in: He ___ be at work — his car is outside.",options:["must","should","can","would"],correct:0,explanation:"'Must' expresses logical deduction/certainty about present situation."},
+    {question:"Fill in: You ___ bring anything — I've got it all.",options:["mustn't","needn't","can't","shouldn't"],correct:1,explanation:"'Needn't' = it is not necessary. 'Mustn't' would mean it is forbidden."}
+  ],
+  articles:[
+    {question:"Fill in: She plays ___ violin in ___ orchestra.",options:["the / an","a / the","the / the","a / an"],correct:2,explanation:"'Play the violin' (instrument always uses 'the'). 'The orchestra' – specific group."},
+    {question:"Fill in: He is ___ honest man.",options:["a","an","the","—"],correct:1,explanation:"'An' before a vowel sound. 'Honest' starts with a silent 'h', so the vowel sound /ɒ/ follows."},
+    {question:"Fill in: ___ life is full of surprises.",options:["A","An","The","—"],correct:3,explanation:"No article with abstract nouns used in a general sense."},
+    {question:"Fill in: We had ___ great time at ___ party.",options:["a / the","a / a","the / a","— / the"],correct:0,explanation:"'A great time' – non-specific experience. 'The party' – specific event both speakers know."},
+    {question:"Fill in: ___ Amazon is ___ longest river in ___ world.",options:["The / the / the","A / the / the","The / a / the","— / the / —"],correct:0,explanation:"Definite article 'the' with rivers, superlatives, and unique places."}
+  ],
+  prepositions:[
+    {question:"Fill in: I'll meet you ___ Monday ___ 3pm.",options:["on / at","in / at","at / in","on / in"],correct:0,explanation:"'On' for days; 'at' for specific times."},
+    {question:"Fill in: She's been waiting ___ two hours.",options:["since","for","during","while"],correct:1,explanation:"'For' with a duration of time; 'since' with a starting point."},
+    {question:"Fill in: He's very good ___ mathematics.",options:["in","at","on","with"],correct:1,explanation:"'Good at' is the fixed collocation."},
+    {question:"Fill in: The keys are ___ the table.",options:["in","at","on","by"],correct:2,explanation:"'On' for surfaces."},
+    {question:"Fill in: We arrived ___ London ___ a rainy evening.",options:["in / on","at / in","to / on","in / in"],correct:0,explanation:"'Arrive in' large places (cities/countries); 'on' for evenings/mornings/specific days."}
+  ],
+  reported:[
+    {question:"Report: She said 'I am tired.' → She said that she ___.",options:["is tired","was tired","were tired","had tired"],correct:1,explanation:"Tense backshift in reported speech: present simple → past simple."},
+    {question:"Report: He said 'I have finished.' → He said that he ___.",options:["has finished","finished","had finished","was finishing"],correct:2,explanation:"Present perfect → past perfect in reported speech."},
+    {question:"Report: 'Will you help me?' she asked. → She asked if I ___.",options:["will help her","would help her","helped her","had helped her"],correct:1,explanation:"'Will' → 'would' in reported questions; use 'if' for yes/no questions."},
+    {question:"Report: 'Don't touch that!' he said. → He told me ___.",options:["not to touch that","don't touch that","to not touch that","not touching that"],correct:0,explanation:"Reported imperatives: 'told + object + (not) to + infinitive'."},
+    {question:"Report: 'I'll call you tomorrow,' she said. → She said she ___ call me ___.",options:["will / tomorrow","would / the next day","would / tomorrow","will / the next day"],correct:1,explanation:"'Will' → 'would'; 'tomorrow' → 'the next day' in reported speech."}
+  ],
+  relative:[
+    {question:"Choose the correct relative pronoun: The woman ___ called you is my sister.",options:["which","whose","who","whom"],correct:2,explanation:"'Who' refers to people as the subject of the relative clause."},
+    {question:"Fill in: The book ___ you lent me was fascinating.",options:["who","which / that","whose","whom"],correct:1,explanation:"'Which' or 'that' refers to things."},
+    {question:"Fill in: That's the man ___ car was stolen.",options:["who","that","which","whose"],correct:3,explanation:"'Whose' shows possession in relative clauses."},
+    {question:"Which sentence uses a NON-DEFINING relative clause?",options:["The girl who sits next to me is my friend.","My sister, who lives in Rome, is a doctor.","That's the film that everyone talked about.","The car which she drives is very old."],correct:1,explanation:"Non-defining clauses add extra info and are set off by commas. The sentence makes sense without them."},
+    {question:"Fill in: London, ___ I was born, has changed a lot.",options:["that","which","where","when"],correct:2,explanation:"'Where' is used for places in relative clauses."}
+  ],
+  comparatives:[
+    {question:"Fill in: This test is ___ than the last one.",options:["more difficult","difficulter","most difficult","the most difficult"],correct:0,explanation:"Adjectives with 3+ syllables use 'more' for comparatives."},
+    {question:"Fill in: The more you practise, ___ you get.",options:["the better","the best","better","more better"],correct:0,explanation:"'The more … the + comparative' structure for parallel increase."},
+    {question:"Fill in: She runs ___ than her brother.",options:["more fast","fastly","faster","fastest"],correct:2,explanation:"Short adverbs (fast, hard, late) add -er for comparative."},
+    {question:"Choose the correct superlative: This is ___ city I've ever visited.",options:["the most beautiful","the beautifulest","more beautiful","most beautiful"],correct:0,explanation:"Superlatives of long adjectives: 'the most + adjective'."},
+    {question:"Fill in: He's not ___ clever ___ his sister.",options:["as / as","so / than","more / than","as / than"],correct:0,explanation:"'As … as' is used in positive equality comparisons."}
+  ],
+  conjunctions:[
+    {question:"Fill in: ___ she was tired, she kept working.",options:["Although","Because","So","For"],correct:0,explanation:"'Although' introduces a contrast/concession."},
+    {question:"Fill in: He didn't go out ___ the bad weather.",options:["although","because of","however","therefore"],correct:1,explanation:"'Because of' is followed by a noun/noun phrase, not a clause."},
+    {question:"Fill in: I studied hard; ___, I passed.",options:["however","therefore","although","despite"],correct:1,explanation:"'Therefore' shows a result/consequence."},
+    {question:"Fill in: She spoke quietly ___ not to wake the baby.",options:["so as","in order","for","as"],correct:0,explanation:"'So as not to + infinitive' expresses negative purpose."},
+    {question:"Fill in: ___ being tired, he finished the work.",options:["Despite","Although","However","Even"],correct:0,explanation:"'Despite' is followed by a noun or gerund (-ing form), not a clause."}
+  ],
+  futureforms:[
+    {question:"Fill in (spontaneous decision): It's cold. I ___ close the window.",options:["am going to","will","am closing","close"],correct:1,explanation:"'Will' is used for spontaneous decisions made at the moment of speaking."},
+    {question:"Fill in (plan/intention): We ___ visit Paris next summer.",options:["will","are going to","visit","are visiting"],correct:1,explanation:"'Going to' is used for plans and intentions already decided."},
+    {question:"Fill in (prediction with evidence): Look at those clouds — it ___ rain.",options:["will","is going to","rains","would"],correct:1,explanation:"'Going to' is used for predictions based on present evidence."},
+    {question:"Fill in (scheduled event): The train ___ at 9:15.",options:["will leave","leaves","is going to leave","would leave"],correct:1,explanation:"Present simple is used for timetabled/scheduled future events."},
+    {question:"Fill in: By next year, she ___ her degree.",options:["will finish","finishes","will have finished","is finishing"],correct:2,explanation:"Future perfect ('will have + past participle') for actions completed before a future time."}
+  ],
+  pasthabits:[
+    {question:"Fill in (past habit): As a child, I ___ climb trees.",options:["used to","would","was used to","got used to"],correct:0,explanation:"Both 'used to' and 'would' describe past repeated actions, but 'used to' can also describe past states."},
+    {question:"Which sentence describes a past STATE (not habit)?",options:["He would visit us every Sunday.","She used to have long hair.","They would argue all the time.","We would walk to school."],correct:1,explanation:"'Used to' (not 'would') describes past states. 'Having long hair' is a state, not an action."},
+    {question:"Fill in: She ___ living in the city – now she loves it.",options:["used to","would","wasn't used to","didn't use to"],correct:2,explanation:"'Be used to + -ing' means accustomed to something (here negated in the past)."},
+    {question:"Fill in: It took time, but he finally ___ waking up early.",options:["used to","got used to","would","was used to"],correct:1,explanation:"'Get used to + -ing' means to become accustomed to something."},
+    {question:"Fill in: My grandfather ___ tell us stories every evening.",options:["used to","would","was used to","got used to"],correct:1,explanation:"'Would' is used for repeated past actions (but NOT past states)."}
+  ],
+  verbpatterns:[
+    {question:"Fill in: I remember ___ her at the party last year.",options:["to meet","meeting","meet","met"],correct:1,explanation:"'Remember + -ing' = recall a past memory. 'Remember to + inf' = not forget to do something."},
+    {question:"Fill in: Please don't forget ___ the door.",options:["locking","to lock","lock","locked"],correct:1,explanation:"'Forget to + infinitive' = fail to remember to do something in the future."},
+    {question:"Fill in: She stopped ___ when she heard the news.",options:["to cry","crying","cry","cried"],correct:1,explanation:"'Stop + -ing' = cease an activity. 'Stop to cry' would mean 'stopped in order to cry'."},
+    {question:"Fill in: Try ___ the sauce – it's delicious!",options:["tasting","to taste","taste","tasted"],correct:0,explanation:"'Try + -ing' = experiment with something. 'Try to + inf' = attempt (with difficulty)."},
+    {question:"Fill in: I regret ___ you that your application was unsuccessful.",options:["telling","to tell","tell","told"],correct:1,explanation:"'Regret to + infinitive' = be sorry to do something (formal). 'Regret + -ing' = feel sorry about past action."}
+  ],
+  wordorder:[
+    {question:"Choose the correct word order:",options:["She always is late.","She is always late.","Always she is late.","She is late always."],correct:1,explanation:"Frequency adverbs (always, often, never) go BEFORE the main verb but AFTER 'be'."},
+    {question:"Choose the correct inversion after 'Never':",options:["Never I have seen such beauty.","Never have I seen such beauty.","Never seen I have such beauty.","Never I seen have such beauty."],correct:1,explanation:"After negative adverbs (never, rarely, hardly), subject and auxiliary are inverted."},
+    {question:"Choose the correct indirect object order:",options:["She gave to me a present.","She gave a present me.","She gave me a present.","She gave me a present to."],correct:2,explanation:"With ditransitive verbs: 'give + indirect object + direct object' (no preposition needed)."},
+    {question:"Choose the correct question form:",options:["Where you are going?","Where are you going?","Where going are you?","Where do you going?"],correct:1,explanation:"Questions: auxiliary verb comes before the subject."},
+    {question:"Choose the sentence with correct placement of 'only':",options:["I only eat vegetables on Mondays.","Only I eat vegetables on Mondays.","I eat only vegetables on Mondays.","I eat vegetables only on Mondays."],correct:2,explanation:"'Only' should be placed directly before the word/phrase it modifies. Here it modifies 'vegetables'."}
+  ],
+  determiners:[
+    {question:"Fill in: ___ students passed the exam — about half.",options:["Each","Every","Both","Some"],correct:3,explanation:"'Some' is used for an indefinite quantity (approximately half here)."},
+    {question:"Fill in: ___ student must bring a calculator.",options:["All","Every","Each","Both"],correct:1,explanation:"'Every + singular noun' refers to all members of a group collectively."},
+    {question:"Fill in: I've read ___ of her novels.",options:["every","all","each","both"],correct:1,explanation:"'All + of + pronoun/determiner' or 'all her novels'. 'Every' needs a singular noun without 'of'."},
+    {question:"Fill in: ___ answer was wrong.",options:["Every","All","Both","Some"],correct:0,explanation:"'Every + singular noun' = all individual items, each one."},
+    {question:"Fill in: She has two brothers. ___ of them are engineers.",options:["Both","All","Every","Each"],correct:0,explanation:"'Both' is used specifically for two people/things."}
+  ],
+  idioms:[
+    {question:"What does 'under the weather' mean?",options:["Outdoors in bad weather","Feeling ill","In a difficult situation","Very tired"],correct:1,explanation:"'Under the weather' means feeling slightly unwell or sick."},
+    {question:"What does 'break the ice' mean?",options:["Destroy something cold","Cause an argument","Do something to reduce tension in a social situation","Speak very directly"],correct:2,explanation:"'Break the ice' means to initiate conversation and ease social awkwardness."},
+    {question:"Fill in: She nailed the presentation — she really hit the nail on the ___.",options:["wall","thumb","head","point"],correct:2,explanation:"'Hit the nail on the head' = say or do exactly the right thing."},
+    {question:"What does 'once in a blue moon' mean?",options:["Every month","Very rarely","At midnight","On a clear night"],correct:1,explanation:"'Once in a blue moon' means very rarely or almost never."},
+    {question:"What does 'bite the bullet' mean?",options:["Eat something quickly","Endure a painful or difficult situation","Speak very directly","Get angry"],correct:1,explanation:"'Bite the bullet' = endure a painful situation bravely because it's unavoidable."}
+  ]
+};
+
 async function startGrammar(topic) {
   grammarTopic = topic; grammarIdx = 0; grammarCorrect = 0; grammarQuestions = [];
   const area = document.getElementById('grammarArea');
-  area.innerHTML = '<div style="text-align:center;padding:30px"><div class="spinner"></div><div style="margin-top:12px;color:var(--text-muted)">Creating new questions...</div></div>';
+  area.innerHTML = '<div style="text-align:center;padding:30px"><div class="spinner"></div><div style="margin-top:12px;color:var(--text-muted)">Fragen werden geladen...</div></div>';
+
+  // Use local bank first, then try AI for variety
+  const bank = localQuestionBank[topic];
+  if (bank && usedQuestions[topic].length === 0) {
+    // Shuffle and use local questions immediately
+    grammarQuestions = [...bank].sort(() => Math.random() - 0.5);
+    usedQuestions[topic].push(...grammarQuestions.map(q => q.question));
+    showGrammarQuestion();
+    // Silently fetch AI questions for next round in background
+    const seed = Math.floor(Math.random() * 99999);
+    callAI([{ role: 'user', content: `Create 5 fresh multiple-choice grammar questions about ${grammarTopics[topic].desc} for an intermediate English learner. (seed:${seed})
+Return ONLY a valid JSON array:
+[{"question":"Fill in: She ___ to work every day.","options":["go","goes","going","gone"],"correct":1,"explanation":"Third person singular present simple needs -s."}]` }], 900)
+      .then(reply => {
+        try {
+          const qs = JSON.parse(extractJSON(reply, 'array'));
+          if (Array.isArray(qs) && qs.length > 0) localQuestionBank[topic].push(...qs);
+        } catch(e) {}
+      }).catch(() => {});
+    return;
+  }
+
   const seed = Math.floor(Math.random() * 99999);
   const avoidHint = usedQuestions[topic].length > 0
     ? `\nDo NOT reuse any of these sentences: ${usedQuestions[topic].slice(-10).join(' | ')}` : '';
   try {
-    const reply = await callAI([{ role: 'user', content: `Create 5 fresh multiple-choice grammar questions about ${grammarTopics[topic].desc} for an intermediate English learner. Use varied, real-life scenarios. (seed:${seed})${avoidHint}
+    const reply = await callAI([{ role: 'user', content: `Create 5 fresh multiple-choice grammar questions about ${grammarTopics[topic].desc} for an intermediate English learner. (seed:${seed})${avoidHint}
 Return ONLY a valid JSON array, nothing else:
 [{"question":"Fill in: She ___ to work every day.","options":["go","goes","going","gone"],"correct":1,"explanation":"With 'she/he/it' in present simple, the verb takes -s: 'She goes to work every day.'"}]` }], 900);
     grammarQuestions = JSON.parse(extractJSON(reply, 'array'));
     usedQuestions[topic].push(...grammarQuestions.map(q => q.question));
     showGrammarQuestion();
   } catch(e) {
-    area.innerHTML = `<div class="card" style="color:var(--danger)">Error: ${escHtml(e.message)}<br><br><button class="btn secondary" onclick="startGrammar('${topic}')">Retry</button></div>`;
+    // Fallback to local bank if AI fails
+    if (bank && bank.length > 0) {
+      grammarQuestions = [...bank].sort(() => Math.random() - 0.5);
+      usedQuestions[topic] = grammarQuestions.map(q => q.question);
+      showGrammarQuestion();
+    } else {
+      area.innerHTML = `<div class="card" style="color:var(--danger)">Fehler: ${escHtml(e.message)}<br><br><button class="btn secondary" onclick="startGrammar('${topic}')">Nochmals versuchen</button></div>`;
+    }
   }
 }
 
@@ -2395,8 +2580,10 @@ seed:${seed}` }], 1000);
 
     document.getElementById('listenLoadingCard').style.display = 'none';
     document.getElementById('listenTextCard').style.display = 'flex';
-    document.getElementById('listenTextDisplay').textContent = listenText;
-    document.getElementById('listenTextDisplay').style.display = 'none';
+    const listenDispEl = document.getElementById('listenTextDisplay');
+    listenDispEl.textContent = listenText;
+    makeWordsTappable(listenDispEl);
+    listenDispEl.style.display = 'none';
     document.getElementById('listenShowTextBtn').textContent = '👁 Show text';
     document.getElementById('listenQuestionsBtn').style.display = 'none';
     speak(listenText, 0.9);
@@ -2691,15 +2878,17 @@ function checkBuild() {
   if (ttsEnabled) speak(buildCorrect);
 }
 
-function switchGrammarMode(mode) {
-  document.getElementById('modeQuizBtn').classList.toggle('active', mode==='quiz');
-  document.getElementById('modeFillBtn').classList.toggle('active', mode==='fill');
-  document.getElementById('modeBuildBtn').classList.toggle('active', mode==='build');
-  const qp = document.getElementById('grammarQuizPanel');
-  qp.style.display = mode==='quiz' ? 'flex' : 'none';
-  qp.style.flexDirection = 'column'; qp.style.gap = '12px';
-  document.getElementById('grammarFillPanel').style.display = mode==='fill' ? 'flex' : 'none';
-  document.getElementById('grammarBuildPanel').style.display = mode==='build' ? 'flex' : 'none';
+function switchGrammarMode(mode) { switchPracticeMode(mode); }
+function switchPracticeMode(mode) {
+  ['quiz','fill','build','write','dict'].forEach(m => {
+    const btn = document.getElementById(`mode${m.charAt(0).toUpperCase()+m.slice(1)}Btn`);
+    if (btn) btn.classList.toggle('active', mode===m);
+  });
+  const panels = { quiz:'grammarQuizPanel', fill:'grammarFillPanel', build:'grammarBuildPanel', write:'skillsWritePanel', dict:'skillsDictPanel' };
+  Object.entries(panels).forEach(([m,id]) => {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = mode===m ? 'flex' : 'none'; el.style.flexDirection='column'; el.style.gap='12px'; }
+  });
 }
 
 // ── WORD OF THE DAY ──
@@ -2794,7 +2983,9 @@ async function startReading(level, topic) {
 Return ONLY the text, no title, no JSON.`}], 200);
     currentReadText = textRaw.trim();
     document.getElementById('readLevelBadge').textContent = level;
-    document.getElementById('readText').textContent = currentReadText;
+    const readTextEl = document.getElementById('readText');
+    readTextEl.textContent = currentReadText;
+    makeWordsTappable(readTextEl);
     document.getElementById('readLoadingCard').style.display = 'none';
     document.getElementById('readTextCard').style.display = 'flex';
 
@@ -2858,12 +3049,26 @@ function readReset() {
   document.getElementById('readIntro').style.display = 'flex';
 }
 
-function switchSkillsMode(mode) {
-  ['listen','write','dict','read'].forEach(m => {
-    document.getElementById(`skills${m.charAt(0).toUpperCase()+m.slice(1)}Btn`).classList.toggle('active', mode===m);
-    document.getElementById(`skills${m.charAt(0).toUpperCase()+m.slice(1)}Panel`).style.display = mode===m?'flex':'none';
+function switchSkillsMode(mode) { switchReadListenMode(mode); }
+function switchReadListenMode(mode) {
+  const map = { read: ['rlReadBtn','skillsReadPanel'], listen: ['rlListenBtn','skillsListenPanel'] };
+  Object.entries(map).forEach(([m,[btnId,panelId]]) => {
+    const btn = document.getElementById(btnId); if (btn) btn.classList.toggle('active', mode===m);
+    const panel = document.getElementById(panelId); if (panel) { panel.style.display = mode===m?'flex':'none'; panel.style.flexDirection='column'; panel.style.gap='12px'; }
   });
   if (mode === 'read') readReset();
+}
+
+function switchTabByName(name) {
+  const btn = document.querySelector(`.nav-btn[onclick*="'${name}'"]`);
+  if (btn) { switchTab(name, btn); btn.classList.add('active'); }
+}
+
+function startPlacementTestFromHome() {
+  document.getElementById('testQuestionCard').style.display = 'none';
+  document.getElementById('testResultCard').style.display = 'none';
+  document.getElementById('testLoadingCard').style.display = 'none';
+  startPlacementTest();
 }
 
 // ── PROGRESS DASHBOARD ──
@@ -3016,10 +3221,10 @@ action is one of: "grammar" (with topic key), "vocab", "fill" (with topic key), 
 
     document.getElementById('pgAdaptiveBtns').innerHTML = data.exercises.map(ex => {
       let onclick = '';
-      if (ex.action === 'grammar' && ex.topic) onclick = `switchTab('grammar', document.querySelector('.nav-btn:nth-child(3)'));switchGrammarMode('quiz');startGrammar('${ex.topic}')`;
-      else if (ex.action === 'vocab') onclick = `switchTab('vocab', document.querySelector('.nav-btn:nth-child(2)'));switchVocabMode('quiz');startVocabQuiz('all')`;
-      else if (ex.action === 'fill' && ex.topic) onclick = `switchTab('grammar', document.querySelector('.nav-btn:nth-child(3)'));switchGrammarMode('fill');startFill('${ex.topic}')`;
-      else if (ex.action === 'dictation') onclick = `switchTab('skills', document.querySelector('.nav-btn:nth-child(5)'));switchSkillsMode('dict')`;
+      if (ex.action === 'grammar' && ex.topic) onclick = `switchTabByName('practice');switchPracticeMode('quiz');startGrammar('${ex.topic}')`;
+      else if (ex.action === 'vocab') onclick = `switchTabByName('vocab');switchVocabMode('quiz');startVocabQuiz('all')`;
+      else if (ex.action === 'fill' && ex.topic) onclick = `switchTabByName('practice');switchPracticeMode('fill');startFill('${ex.topic}')`;
+      else if (ex.action === 'dictation') onclick = `switchTabByName('practice');switchPracticeMode('dict')`;
       return `<button class="btn secondary" style="font-size:13px" onclick="${onclick}">${escHtml(ex.label)}</button>`;
     }).join('');
   } catch(e) {
@@ -3029,8 +3234,8 @@ action is one of: "grammar" (with topic key), "vocab", "fill" (with topic key), 
     const weakestTopic = Object.entries(grammarStats).sort((a,b) => a[1].correct/a[1].total - b[1].correct/b[1].total)[0];
     document.getElementById('pgAdaptiveText').textContent = 'Hier sind gezielte Übungen für deine Schwachstellen:';
     let btns = '';
-    if (weakestTopic) btns += `<button class="btn secondary" style="font-size:13px" onclick="switchTab('grammar',document.querySelector('.nav-btn:nth-child(3)'));switchGrammarMode('quiz');startGrammar('${weakestTopic[0]}')">📚 ${grammarTopics[weakestTopic[0]]?.label}</button>`;
-    if (vocabWeak.length) btns += `<button class="btn secondary" style="font-size:13px" onclick="switchTab('vocab',document.querySelector('.nav-btn:nth-child(2)'));switchVocabMode('quiz');startVocabQuiz('all')">📖 Vokabeln testen</button>`;
+    if (weakestTopic) btns += `<button class="btn secondary" style="font-size:13px" onclick="switchTabByName('practice');switchPracticeMode('quiz');startGrammar('${weakestTopic[0]}')">📚 ${grammarTopics[weakestTopic[0]]?.label}</button>`;
+    if (vocabWeak.length) btns += `<button class="btn secondary" style="font-size:13px" onclick="switchTabByName('vocab');switchVocabMode('quiz');startVocabQuiz('all')">📖 Vokabeln testen</button>`;
     document.getElementById('pgAdaptiveBtns').innerHTML = btns;
   }
   document.getElementById('pgTrainBtn').disabled = false;
@@ -3210,8 +3415,104 @@ function showTestResult() {
 
 function resetPlacementTest() {
   document.getElementById('testResultCard').style.display = 'none';
-  document.getElementById('testIntro').style.display = 'flex';
+  document.getElementById('testQuestionCard').style.display = 'none';
+  document.getElementById('testLoadingCard').style.display = 'none';
 }
+
+// ── TAP-TO-VOCAB ──
+let pwCurrentWord = '';
+let pwCurrentTrans = '';
+const pwTransCache = {};
+
+function makeWordsTappable(containerEl) {
+  const html = containerEl.innerHTML || containerEl.textContent;
+  // Only process text nodes to avoid breaking existing HTML
+  function processNode(node) {
+    if (node.nodeType === 3) { // text node
+      const text = node.textContent;
+      if (!text.trim()) return;
+      const span = document.createElement('span');
+      span.innerHTML = text.replace(/([a-zA-Z''-]+)/g, (w) => {
+        const clean = w.replace(/^'+|'+$/g, '');
+        if (clean.length < 2) return w;
+        return `<span class="tappable-word" onclick="onWordTap(event,'${clean.replace(/'/g,"\\'")}')"> ${w}</span>`;
+      });
+      node.parentNode.replaceChild(span, node);
+    } else if (node.nodeType === 1 && !['BUTTON','INPUT','TEXTAREA','SELECT'].includes(node.tagName)) {
+      Array.from(node.childNodes).forEach(processNode);
+    }
+  }
+  Array.from(containerEl.childNodes).forEach(processNode);
+}
+
+function onWordTap(e, word) {
+  e.stopPropagation();
+  pwCurrentWord = word;
+  pwCurrentTrans = '';
+  const popup = document.getElementById('wordPopup');
+  document.getElementById('pwWord').textContent = word;
+  document.getElementById('pwTrans').innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>';
+
+  // Position popup near tap
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const px = Math.min(e.clientX, vw - 296);
+  const py = e.clientY + 10 + 140 > vh ? e.clientY - 150 : e.clientY + 10;
+  popup.style.left = Math.max(8, px) + 'px';
+  popup.style.top = py + 'px';
+  popup.style.display = 'flex';
+
+  // Translate via AI (with session cache)
+  const cacheKey = word.toLowerCase();
+  if (pwTransCache[cacheKey]) {
+    pwCurrentTrans = pwTransCache[cacheKey];
+    document.getElementById('pwTrans').textContent = pwCurrentTrans;
+  } else {
+    callAI([{role:'user', content:`Translate the English word "${word}" to German. Reply with ONLY the German translation, nothing else. If it has multiple meanings give the most common one.`}], 40)
+      .then(t => {
+        pwCurrentTrans = t.trim();
+        pwTransCache[cacheKey] = pwCurrentTrans;
+        document.getElementById('pwTrans').textContent = pwCurrentTrans;
+      })
+      .catch(() => {
+        document.getElementById('pwTrans').textContent = '(Übersetzung nicht verfügbar)';
+      });
+  }
+}
+
+function closeWordPopup() {
+  document.getElementById('wordPopup').style.display = 'none';
+}
+
+function addWordFromPopup() {
+  if (!pwCurrentWord) return;
+  const exists = vocab.find(v => v.word.toLowerCase() === pwCurrentWord.toLowerCase());
+  if (exists) { closeWordPopup(); showToast(`"${pwCurrentWord}" ist bereits in deinem Vocab`); return; }
+  vocab.push({ word: pwCurrentWord, translation: pwCurrentTrans || '', example: '', learned: false });
+  localStorage.setItem('vocab', JSON.stringify(vocab));
+  renderVocabStats();
+  closeWordPopup();
+  showToast(`✓ "${pwCurrentWord}" zu Vocab hinzugefügt`);
+}
+
+function showToast(msg) {
+  let t = document.getElementById('appToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'appToast';
+    t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1e1b4b;border:1px solid var(--primary-light);color:var(--primary-light);padding:10px 18px;border-radius:99px;font-size:13px;font-weight:600;z-index:10000;pointer-events:none;transition:opacity 0.3s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
+
+// Close popup when tapping elsewhere
+document.addEventListener('click', (e) => {
+  const popup = document.getElementById('wordPopup');
+  if (popup && !popup.contains(e.target)) closeWordPopup();
+});
 </script>
 </body>
 </html>

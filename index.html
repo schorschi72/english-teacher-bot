@@ -1142,42 +1142,97 @@ function updateApiKeyUI() {
   if (!key && document.getElementById('apiKeyInput')) document.getElementById('apiKeyInput').value = '';
 }
 
-async function callAI(messages, maxTokens = 400) {
-  _cancelBgAI(); // abort any running background word-translation calls first
-  const key = getApiKey();
-  if (!key) {
-    switchTab('home', document.querySelector('.nav-btn'));
-    updateApiKeyUI();
-    throw new Error('Bitte zuerst den API Key im Start-Tab eingeben');
-  }
+function _buildGeminiBody(messages, maxTokens, temperature = 0.7) {
   const geminiMessages = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
-  // Merge consecutive same-role messages (Gemini requires alternating)
   const merged = [];
   for (const m of geminiMessages) {
     if (merged.length && merged[merged.length-1].role === m.role) {
       merged[merged.length-1].parts[0].text += '\n' + m.parts[0].text;
     } else { merged.push(m); }
   }
-  // Extract system message if present
   let systemInstruction = null;
   let contents = merged;
   if (messages[0]?.role === 'system') {
     systemInstruction = { parts: [{ text: messages[0].content }] };
-    contents = merged.filter(m => m.role !== 'system' || merged.indexOf(m) > 0);
+    contents = merged.filter((m, i) => i > 0 || m.role !== 'system');
     if (contents.length === 0) contents = [{ role: 'user', parts: [{ text: '' }] }];
   }
-  const body = {
-    contents,
-    generationConfig: { maxOutputTokens: Math.max(maxTokens, 512), temperature: 0.7 }
-  };
+  const body = { contents, generationConfig: { maxOutputTokens: Math.max(maxTokens, 512), temperature } };
   if (systemInstruction) body.systemInstruction = systemInstruction;
+  return body;
+}
 
-  // Models ordered by reliability on free tier (highest quota first)
+// Streaming chat call — calls onChunk(text) for each token chunk, returns full text
+async function callAIStream(messages, maxTokens = 500, onChunk) {
+  _cancelBgAI();
+  const key = getApiKey();
+  if (!key) { switchTab('home', document.querySelector('.nav-btn')); updateApiKeyUI(); throw new Error('Kein API Key'); }
+  const body = _buildGeminiBody(messages, maxTokens);
   const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
   let lastErr = '';
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     const model = MODELS[Math.min(attempt, MODELS.length - 1)];
-    if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
+    if (attempt > 0) await new Promise(r => setTimeout(r, 800));
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${key}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal }
+      );
+      clearTimeout(timer);
+      if (res.status === 429) { lastErr = `Rate limit (429)`; continue; }
+      if (res.status === 503) { lastErr = `Nicht verfügbar (503)`; continue; }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `HTTP ${res.status}`);
+      }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let full = '', buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const json = line.slice(6).trim();
+          if (!json || json === '[DONE]') continue;
+          try {
+            const chunk = JSON.parse(json);
+            const text = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) { full += text; onChunk(text, full); }
+          } catch(_) {}
+        }
+      }
+      if (!full) { lastErr = 'Leere Antwort'; continue; }
+      return full;
+    } catch(e) {
+      clearTimeout(timer);
+      if (e.name === 'AbortError') { lastErr = 'Timeout'; continue; }
+      if (attempt >= 2) throw e;
+      lastErr = e.message;
+    }
+  }
+  throw new Error('KI antwortet nicht. ' + lastErr);
+}
+
+async function callAI(messages, maxTokens = 400) {
+  _cancelBgAI();
+  const key = getApiKey();
+  if (!key) {
+    switchTab('home', document.querySelector('.nav-btn'));
+    updateApiKeyUI();
+    throw new Error('Bitte zuerst den API Key im Start-Tab eingeben');
+  }
+  const body = _buildGeminiBody(messages, maxTokens);
+  const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  let lastErr = '';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const model = MODELS[Math.min(attempt, MODELS.length - 1)];
+    if (attempt > 0) await new Promise(r => setTimeout(r, 800));
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     try {
@@ -1200,7 +1255,7 @@ async function callAI(messages, maxTokens = 400) {
     } catch(e) {
       clearTimeout(timer);
       if (e.name === 'AbortError') { lastErr = `Timeout bei ${model}`; continue; }
-      if (attempt >= 4) throw e;
+      if (attempt >= 2) throw e;
       lastErr = e.message;
     }
   }
@@ -1345,39 +1400,60 @@ async function sendChat() {
   userWrap.innerHTML = `<div class="msg user">${escHtml(text)}</div>`;
   msgs.appendChild(userWrap);
 
-  const loading = document.createElement('div');
-  loading.className = 'msg-wrap bot-wrap';
-  loading.innerHTML = '<div class="msg bot"><div class="spinner"></div></div>';
-  msgs.appendChild(loading);
+  // Streaming bubble
+  const botWrap = document.createElement('div');
+  botWrap.className = 'msg-wrap bot-wrap';
+  const botMsg = document.createElement('div');
+  botMsg.className = 'msg bot';
+  botMsg.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;margin:2px 4px"></div>';
+  botWrap.appendChild(botMsg);
+  msgs.appendChild(botWrap);
   msgs.scrollTop = msgs.scrollHeight;
 
   chatHistory.push({ role: 'user', content: text });
 
   try {
-    const reply = await callAI([{ role: 'system', content: systemPrompts[chatMode] }, ...chatHistory], 500);
+    let started = false;
+    const reply = await callAIStream(
+      [{ role: 'system', content: systemPrompts[chatMode] }, ...chatHistory],
+      500,
+      (_chunk, full) => {
+        if (!started) { started = true; botMsg.textContent = ''; }
+        botMsg.textContent = full;
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+    );
     chatHistory.push({ role: 'assistant', content: reply });
-    loading.remove();
 
+    // Post-process corrections mode
     if (chatMode === 'corrections') {
       const lines = reply.split('\n').map(l => l.trim()).filter(Boolean);
       const corrIdx = lines.findIndex(l => l.toUpperCase().startsWith('CORRECTION:'));
       if (corrIdx !== -1) {
         const corrLine = lines[corrIdx];
         const rest = lines.filter((_, i) => i !== corrIdx).join('\n');
+        botWrap.remove();
         const corrWrap = document.createElement('div');
         corrWrap.className = 'msg-wrap bot-wrap';
         corrWrap.innerHTML = `<div class="msg correction">✏️ ${escHtml(corrLine)}</div>`;
         msgs.appendChild(corrWrap);
         if (rest) addBotMessage(escHtml(rest));
         else msgs.scrollTop = msgs.scrollHeight;
-      } else {
-        addBotMessage(escHtml(reply));
+        return;
       }
-    } else {
-      addBotMessage(escHtml(reply));
     }
+
+    // Add listen button
+    const listenBtn = document.createElement('button');
+    listenBtn.className = 'speak-btn';
+    listenBtn.textContent = '🔊 Listen';
+    listenBtn.onclick = () => speakMsg(listenBtn, reply);
+    botWrap.appendChild(listenBtn);
+    if (ttsEnabled) speak(reply);
+    msgs.scrollTop = msgs.scrollHeight;
+
   } catch(e) {
-    loading.remove();
+    botWrap.remove();
     const errWrap = document.createElement('div');
     errWrap.className = 'msg-wrap bot-wrap';
     errWrap.innerHTML = '<div class="msg bot" style="color:var(--danger)">Connection error — please try again.</div>';

@@ -1201,24 +1201,31 @@ async function callAIStream(messages, maxTokens = 500, onChunk) {
     if (waitMs) await _sleep(waitMs, myCtrl.signal);
     if (myCtrl.signal.aborted) throw new DOMException('Cancelled', 'AbortError');
     const localCtrl = new AbortController();
-    const timer = setTimeout(() => localCtrl.abort(), 18000);
-    const signal = AbortSignal.any
-      ? AbortSignal.any([myCtrl.signal, localCtrl.signal])
-      : localCtrl.signal;
+    // Combined signal: abort on global cancel OR per-attempt timeout
+    let chunkTimer;
+    const CHUNK_TIMEOUT = 15000; // abort if no data for 15s
+    const resetChunkTimer = () => {
+      clearTimeout(chunkTimer);
+      chunkTimer = setTimeout(() => localCtrl.abort(), CHUNK_TIMEOUT);
+    };
+    const signal = myCtrl.signal.aborted ? myCtrl.signal
+      : (AbortSignal.any ? AbortSignal.any([myCtrl.signal, localCtrl.signal]) : localCtrl.signal);
     try {
+      resetChunkTimer(); // start timeout before fetch
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${key}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal }
       );
-      clearTimeout(timer);
+      resetChunkTimer(); // got headers — reset for stream body
       if (res.status === 429) {
+        clearTimeout(chunkTimer);
         lastErr = `Rate limit (429) bei ${model}`;
-        // After a full cycle through all models, wait longer before re-cycling
         waitMs = i < AI_MODELS.length ? 500 : 12000;
         continue;
       }
-      if (res.status === 503) { lastErr = `Nicht verfügbar (503)`; waitMs = 500; continue; }
+      if (res.status === 503) { clearTimeout(chunkTimer); lastErr = `Nicht verfügbar (503)`; waitMs = 500; continue; }
       if (!res.ok) {
+        clearTimeout(chunkTimer);
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error?.message || `HTTP ${res.status}`);
       }
@@ -1228,6 +1235,7 @@ async function callAIStream(messages, maxTokens = 500, onChunk) {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        resetChunkTimer(); // data arriving — keep alive
         buf += dec.decode(value, { stream: true });
         const lines = buf.split('\n');
         buf = lines.pop();
@@ -1242,10 +1250,11 @@ async function callAIStream(messages, maxTokens = 500, onChunk) {
           } catch(_) {}
         }
       }
+      clearTimeout(chunkTimer);
       if (!full) { lastErr = 'Leere Antwort'; waitMs = 300; continue; }
       return full;
     } catch(e) {
-      clearTimeout(timer);
+      clearTimeout(chunkTimer);
       if (e.name === 'AbortError') {
         if (myCtrl.signal.aborted) throw e;
         lastErr = 'Timeout'; waitMs = 500;

@@ -1168,10 +1168,11 @@ function _cancelStream() { _streamAbortCtrl.abort(); _streamAbortCtrl = new Abor
 
 // Ordered list of models to try — more options = more rate-limit headroom
 const AI_MODELS = [
-  'gemini-2.5-flash-lite-preview-06-17',
+  'gemini-2.5-flash-lite',
   'gemini-2.0-flash-lite',
   'gemini-2.5-flash',
   'gemini-2.0-flash',
+  'gemini-2.5-flash-lite-preview-06-17',
 ];
 
 // Helper: sleep that respects an AbortSignal
@@ -1213,7 +1214,7 @@ async function callAIStream(messages, maxTokens = 500, onChunk) {
       if (res.status === 429) {
         lastErr = `Rate limit (429) bei ${model}`;
         // After a full cycle through all models, wait longer before re-cycling
-        waitMs = i < AI_MODELS.length ? 500 : 3000;
+        waitMs = i < AI_MODELS.length ? 500 : 12000;
         continue;
       }
       if (res.status === 503) { lastErr = `Nicht verfügbar (503)`; waitMs = 500; continue; }
@@ -1498,9 +1499,14 @@ async function sendChat() {
       doFinish(reply);
     } catch(e) {
       botWrap.remove();
+      chatHistory.pop(); // remove the user message so retry re-sends it
       const errWrap = document.createElement('div');
       errWrap.className = 'msg-wrap bot-wrap';
-      errWrap.innerHTML = `<div class="msg bot" style="color:var(--danger)">⚠️ ${escHtml(e.message)}</div>`;
+      errWrap.innerHTML = `
+        <div class="msg bot" style="color:var(--danger);display:flex;flex-direction:column;gap:8px">
+          <span>⚠️ ${escHtml(e.message)}</span>
+          <button class="btn secondary" style="font-size:13px;min-height:36px;padding:6px 12px" onclick="this.closest('.msg-wrap').remove();document.getElementById('chatInput').value=${JSON.stringify(text)};sendChat()">🔄 Nochmals versuchen</button>
+        </div>`;
       msgs.appendChild(errWrap);
       msgs.scrollTop = msgs.scrollHeight;
     }

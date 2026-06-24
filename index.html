@@ -1162,33 +1162,61 @@ function _buildGeminiBody(messages, maxTokens, temperature = 0.7) {
   return body;
 }
 
+// Global controller so a new stream cancels any previous one
+let _streamAbortCtrl = new AbortController();
+function _cancelStream() { _streamAbortCtrl.abort(); _streamAbortCtrl = new AbortController(); }
+
+// Ordered list of models to try — more options = more rate-limit headroom
+const AI_MODELS = [
+  'gemini-2.5-flash-lite-preview-06-17',
+  'gemini-2.0-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+];
+
+// Helper: sleep that respects an AbortSignal
+function _sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(new DOMException('Cancelled', 'AbortError')); return; }
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Cancelled', 'AbortError')); }, { once: true });
+  });
+}
+
 // Streaming chat call — calls onChunk(text) for each token chunk, returns full text
 async function callAIStream(messages, maxTokens = 500, onChunk) {
+  _cancelStream();
   _cancelBgAI();
   const key = getApiKey();
   if (!key) { switchTab('home', document.querySelector('.nav-btn')); updateApiKeyUI(); throw new Error('Kein API Key'); }
   const body = _buildGeminiBody(messages, maxTokens);
-  // Each entry: [model, delayMs before this attempt]
-  const ATTEMPTS = [
-    ['gemini-2.0-flash-lite', 0],
-    ['gemini-2.0-flash',      1000],
-    ['gemini-2.0-flash-lite', 3000],
-    ['gemini-2.0-flash',      3000],
-    ['gemini-2.5-flash',      3000],
-  ];
+  const myCtrl = _streamAbortCtrl;
+  // Cycle through all models; on 429 wait briefly then try next
   let lastErr = '';
-  for (const [model, delay] of ATTEMPTS) {
-    if (delay) await new Promise(r => setTimeout(r, delay));
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 20000);
+  let waitMs = 0;
+  for (let i = 0; i < AI_MODELS.length * 2; i++) {
+    const model = AI_MODELS[i % AI_MODELS.length];
+    if (myCtrl.signal.aborted) throw new DOMException('Cancelled', 'AbortError');
+    if (waitMs) await _sleep(waitMs, myCtrl.signal);
+    if (myCtrl.signal.aborted) throw new DOMException('Cancelled', 'AbortError');
+    const localCtrl = new AbortController();
+    const timer = setTimeout(() => localCtrl.abort(), 18000);
+    const signal = AbortSignal.any
+      ? AbortSignal.any([myCtrl.signal, localCtrl.signal])
+      : localCtrl.signal;
     try {
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${key}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal }
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal }
       );
       clearTimeout(timer);
-      if (res.status === 429) { lastErr = `Rate limit (429) bei ${model}`; continue; }
-      if (res.status === 503) { lastErr = `Nicht verfügbar (503)`; continue; }
+      if (res.status === 429) {
+        lastErr = `Rate limit (429) bei ${model}`;
+        // After a full cycle through all models, wait longer before re-cycling
+        waitMs = i < AI_MODELS.length ? 500 : 3000;
+        continue;
+      }
+      if (res.status === 503) { lastErr = `Nicht verfügbar (503)`; waitMs = 500; continue; }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error?.message || `HTTP ${res.status}`);
@@ -1213,15 +1241,19 @@ async function callAIStream(messages, maxTokens = 500, onChunk) {
           } catch(_) {}
         }
       }
-      if (!full) { lastErr = 'Leere Antwort'; continue; }
+      if (!full) { lastErr = 'Leere Antwort'; waitMs = 300; continue; }
       return full;
     } catch(e) {
       clearTimeout(timer);
-      if (e.name === 'AbortError') { lastErr = 'Timeout'; continue; }
+      if (e.name === 'AbortError') {
+        if (myCtrl.signal.aborted) throw e;
+        lastErr = 'Timeout'; waitMs = 500;
+        continue;
+      }
       throw e;
     }
   }
-  throw new Error('Rate limit erreicht — bitte 30 Sekunden warten und nochmals senden. (' + lastErr + ')');
+  throw new Error('Alle Modelle haben Rate-Limit — bitte 30 Sekunden warten. (' + lastErr + ')');
 }
 
 async function callAI(messages, maxTokens = 400) {
@@ -1233,11 +1265,11 @@ async function callAI(messages, maxTokens = 400) {
     throw new Error('Bitte zuerst den API Key im Start-Tab eingeben');
   }
   const body = _buildGeminiBody(messages, maxTokens);
-  const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash'];
   let lastErr = '';
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const model = MODELS[Math.min(attempt, MODELS.length - 1)];
-    if (attempt > 0) await new Promise(r => setTimeout(r, 800));
+  let waitMs = 0;
+  for (let i = 0; i < AI_MODELS.length * 2; i++) {
+    const model = AI_MODELS[i % AI_MODELS.length];
+    if (waitMs) await new Promise(r => setTimeout(r, waitMs));
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     try {
@@ -1246,22 +1278,23 @@ async function callAI(messages, maxTokens = 400) {
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal }
       );
       clearTimeout(timer);
-      if (res.status === 429) { lastErr = `Rate limit (429) bei ${model}`; continue; }
-      if (res.status === 503) { lastErr = `Service nicht verfügbar (503)`; continue; }
+      if (res.status === 429) { lastErr = `Rate limit (429) bei ${model}`; waitMs = i < AI_MODELS.length ? 500 : 3000; continue; }
+      if (res.status === 503) { lastErr = `Service nicht verfügbar (503)`; waitMs = 500; continue; }
       if (res.status === 400 || res.status === 403) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error?.message || `HTTP ${res.status} — API Key prüfen`);
       }
-      if (!res.ok) { lastErr = `HTTP ${res.status} bei ${model}`; continue; }
+      if (!res.ok) { lastErr = `HTTP ${res.status} bei ${model}`; waitMs = 300; continue; }
       const data = await res.json();
       const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!content) { lastErr = 'Leere Antwort von ' + model; continue; }
+      if (!content) { lastErr = 'Leere Antwort von ' + model; waitMs = 300; continue; }
       return content;
     } catch(e) {
       clearTimeout(timer);
-      if (e.name === 'AbortError') { lastErr = `Timeout bei ${model}`; continue; }
-      if (attempt >= 2) throw e;
+      if (e.name === 'AbortError') { lastErr = `Timeout bei ${model}`; waitMs = 500; continue; }
       lastErr = e.message;
+      const status = e.status;
+      if (status === 400 || status === 403) throw e;
     }
   }
   throw new Error('KI antwortet nicht. Letzter Fehler: ' + lastErr);
@@ -2657,10 +2690,34 @@ function extractJSON(text, type) {
   const start = text.indexOf(open);
   if (start === -1) throw new Error('No JSON found in response');
   let depth = 0;
+  let inStr = false, esc = false;
   for (let i = start; i < text.length; i++) {
-    if (text[i] === open) depth++;
-    else if (text[i] === close) { depth--; if (depth === 0) return text.slice(start, i + 1); }
+    const c = text[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\' && inStr) { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === open) depth++;
+    else if (c === close) { depth--; if (depth === 0) return text.slice(start, i + 1); }
   }
+  // Truncated response — try to auto-repair by closing open structures
+  let fragment = text.slice(start);
+  // Remove trailing incomplete string or value
+  fragment = fragment.replace(/,\s*$/, '').replace(/"[^"]*$/, '"').replace(/:\s*$/, ':null');
+  // Close all open braces/brackets
+  const stack = [];
+  inStr = false; esc = false;
+  for (const c of fragment) {
+    if (esc) { esc = false; continue; }
+    if (c === '\\' && inStr) { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{') stack.push('}');
+    else if (c === '[') stack.push(']');
+    else if (c === '}' || c === ']') stack.pop();
+  }
+  const repaired = fragment + stack.reverse().join('');
+  try { JSON.parse(repaired); return repaired; } catch(_) {}
   throw new Error('Incomplete JSON in response');
 }
 
@@ -3824,7 +3881,7 @@ async function _callAIOnce(messages, maxTokens) {
   if (!key) throw new Error('no key');
   const geminiMessages = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
   const body = { contents: geminiMessages, generationConfig: { maxOutputTokens: Math.max(maxTokens, 256), temperature: 0.3 } };
-  const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
+  const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash'];
   for (const model of MODELS) {
     if (_bgAbortCtrl.signal.aborted) throw new Error('cancelled');
     const ctrl = new AbortController();

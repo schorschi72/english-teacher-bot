@@ -1157,7 +1157,7 @@ function _buildGeminiBody(messages, maxTokens, temperature = 0.7) {
     contents = merged.filter((m, i) => i > 0 || m.role !== 'system');
     if (contents.length === 0) contents = [{ role: 'user', parts: [{ text: '' }] }];
   }
-  const body = { contents, generationConfig: { maxOutputTokens: Math.max(maxTokens, 512), temperature } };
+  const body = { contents, generationConfig: { maxOutputTokens: Math.max(maxTokens, 1024), temperature } };
   if (systemInstruction) body.systemInstruction = systemInstruction;
   return body;
 }
@@ -1833,7 +1833,7 @@ async function generateVocab(btn) {
     const topicHint = activeInterests ? `Focus on topics: ${activeInterests}.` : '';
     const avoidHint = existing ? ` Avoid: ${existing}.` : '';
     const prompt = `Give me 5 useful English words for an intermediate learner. ${topicHint}${avoidHint} Return ONLY valid JSON array:\n[{"word":"endeavour","translation":"Bemühen","example":"Her endeavour paid off."}]`;
-    const reply = await callAI([{ role: 'user', content: prompt }], 400);
+    const reply = await callAI([{ role: 'user', content: prompt }], 600);
     const words = JSON.parse(extractJSON(reply, 'array'));
     words.forEach(w => { if (w.word && w.translation) vocab.push({ word: w.word, translation: w.translation, example: w.example || '', learned: false }); });
     localStorage.setItem('vocab', JSON.stringify(vocab));
@@ -2717,8 +2717,13 @@ function extractJSON(text, type) {
   }
   // Truncated response — try to auto-repair by closing open structures
   let fragment = text.slice(start);
-  // Remove trailing incomplete string or value
-  fragment = fragment.replace(/,\s*$/, '').replace(/"[^"]*$/, '"').replace(/:\s*$/, ':null');
+  // Remove trailing comma, incomplete key-value, or dangling colon
+  fragment = fragment.replace(/,\s*$/, '');
+  fragment = fragment.replace(/,\s*"[^"]*$/, '');   // trailing incomplete key
+  fragment = fragment.replace(/"[^"]*$/, '"');        // incomplete string value
+  fragment = fragment.replace(/:\s*"[^"]*$/, ':""'); // incomplete string after colon
+  fragment = fragment.replace(/:\s*$/, ':null');      // dangling colon
+  fragment = fragment.replace(/:\s*[\d.eE+-]*$/, ':null'); // incomplete number
   // Close all open braces/brackets
   const stack = [];
   inStr = false; esc = false;
@@ -2731,8 +2736,13 @@ function extractJSON(text, type) {
     else if (c === '[') stack.push(']');
     else if (c === '}' || c === ']') stack.pop();
   }
+  if (inStr) { fragment += '"'; }  // close unclosed string
   const repaired = fragment + stack.reverse().join('');
   try { JSON.parse(repaired); return repaired; } catch(_) {}
+  // Last resort: remove last incomplete object/array item and close
+  const trimmed = fragment.replace(/,?\s*\{[^{}]*$/, '').replace(/,?\s*\[[^\[\]]*$/, '');
+  const repaired2 = trimmed + stack.reverse().join('');
+  try { JSON.parse(repaired2); return repaired2; } catch(_) {}
   throw new Error('Incomplete JSON in response');
 }
 

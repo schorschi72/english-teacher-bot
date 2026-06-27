@@ -1809,15 +1809,40 @@ function checkVocabAnswer(spoken) {
     document.getElementById('vocabVoiceArea').style.display = 'none';
   }
 }
-function addVocab() {
+async function addVocab() {
   const word = document.getElementById('newWord').value.trim();
-  const translation = document.getElementById('newTranslation').value.trim();
-  if (!word || !translation) return;
-  vocab.push({ word, translation, learned: false });
+  let translation = document.getElementById('newTranslation').value.trim();
+  if (!word) return;
+
+  if (!translation) {
+    if (!getApiKey()) { showToast('Bitte zuerst API Key im Start-Tab eingeben'); return; }
+    const addBtn = document.querySelector('[onclick="addVocab()"]');
+    if (addBtn) { addBtn.disabled = true; addBtn.textContent = '⏳ Übersetze…'; }
+    try {
+      const reply = await callAI([{ role: 'user', content:
+        `Translate the English word or phrase "${word}" to German. Return ONLY valid JSON:\n{"translation":"deutsche Übersetzung","example":"Short English example sentence using '${word}'."}`
+      }], 200);
+      const data = JSON.parse(extractJSON(reply, 'object'));
+      translation = data.translation || '';
+      const example = data.example || '';
+      if (!translation) throw new Error('Keine Übersetzung erhalten');
+      document.getElementById('newTranslation').value = translation;
+      vocab.push({ word, translation, example, learned: false });
+    } catch(e) {
+      showToast('Fehler beim Übersetzen: ' + e.message);
+      if (addBtn) { addBtn.disabled = false; addBtn.textContent = '+ Add'; }
+      return;
+    }
+    if (addBtn) { addBtn.disabled = false; addBtn.textContent = '+ Add'; }
+  } else {
+    vocab.push({ word, translation, learned: false });
+  }
+
   localStorage.setItem('vocab', JSON.stringify(vocab));
   document.getElementById('newWord').value = '';
   document.getElementById('newTranslation').value = '';
   renderVocabStats();
+  showToast(`✓ "${word}" hinzugefügt`);
 }
 function deleteVocab(i) {
   vocab.splice(i, 1);

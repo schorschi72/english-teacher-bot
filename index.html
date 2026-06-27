@@ -3635,80 +3635,103 @@ action is one of: "grammar" (with topic key), "vocab", "fill" (with topic key), 
 // ── PLACEMENT TEST ──
 let testQuestions = [];
 let testIdx = 0;
-let testScores = { B1: 0, B2: 0, C1: 0, C2: 0 };
+let testScores = {};
+
+const TEST_LEVELS = ['A1','A2','B1','B2','C1','C2'];
 
 const levelDescs = {
-  B1: 'Du kannst die wichtigsten Punkte verstehen, wenn klare Standardsprache verwendet wird. Du kannst dich in alltäglichen Situationen verständigen.',
+  A1: 'Du kannst vertraute, alltägliche Ausdrücke und einfache Sätze verstehen und verwenden.',
+  A2: 'Du kannst Sätze und häufig gebrauchte Ausdrücke verstehen, die mit Bereichen von unmittelbarer Bedeutung zusammenhängen.',
+  B1: 'Du kannst die wichtigsten Punkte verstehen, wenn klare Standardsprache verwendet wird und es um vertraute Themen geht.',
   B2: 'Du kannst die Hauptinhalte komplexer Texte zu konkreten und abstrakten Themen verstehen und dich spontan und fließend unterhalten.',
-  C1: 'Du kannst ein breites Spektrum anspruchsvoller, längerer Texte verstehen und dich spontan und fließend ausdrücken, ohne öfter merklich nach Worten suchen zu müssen.',
-  C2: 'Du kannst praktisch alles, was du hörst oder liest, mühelos verstehen. Dein Ausdruck ist sehr präzise, nuanciert und fließend.'
+  C1: 'Du kannst ein breites Spektrum anspruchsvoller Texte verstehen und dich spontan und fließend ausdrücken, ohne oft nach Worten suchen zu müssen.',
+  C2: 'Du kannst praktisch alles mühelos verstehen. Dein Ausdruck ist sehr präzise, nuanciert und fließend.'
 };
 
-const TEST_BANK = {
+const TEST_BANK_FALLBACK = {
+  A1: [
+    { question:"___ is your name?", options:["What","Who","Where","How"], correct:0, explanation:"'What is your name?' ist die Standardfrage nach dem Namen." },
+    { question:"I ___ a student.", options:["am","is","are","be"], correct:0, explanation:"Mit 'I' verwendet man 'am' als Form von 'to be'." },
+    { question:"She ___ a cat.", options:["have","has","is","are"], correct:1, explanation:"'She/He/It' verwendet die 3. Person Singular: 'has'." },
+    { question:"How ___ apples are there?", options:["much","many","lot","some"], correct:1, explanation:"'Many' für zählbare Nomen (apples), 'much' für unzählbare." },
+    { question:"The cat is ___ the table.", options:["in","on","at","by"], correct:1, explanation:"'On the table' = auf dem Tisch." }
+  ],
+  A2: [
+    { question:"I ___ breakfast at 7 o'clock every morning.", options:["have","had","am having","has"], correct:0, explanation:"Regelmäßige Handlungen stehen im Present Simple." },
+    { question:"___ you like coffee?", options:["Do","Does","Are","Is"], correct:0, explanation:"Fragen im Present Simple mit 'you/I/we/they' beginnen mit 'Do'." },
+    { question:"There ___ a lot of people at the party.", options:["is","was","were","are"], correct:2, explanation:"'People' ist Plural, daher 'were' in der Vergangenheit." },
+    { question:"She ___ TV when I called.", options:["watches","watched","was watching","is watching"], correct:2, explanation:"Eine laufende Aktion in der Vergangenheit steht im Past Continuous." },
+    { question:"I'd like ___ water, please.", options:["a","an","some","any"], correct:2, explanation:"'Some' bei unzählbaren Nomen in positiven Sätzen." }
+  ],
   B1: [
-    { question:"She ___ to work every day by bus.", options:["go","goes","going","gone"], correct:1, explanation:"With she/he/it in present simple we add -s: goes." },
-    { question:"I ___ my keys. Have you seen them?", options:["lose","lost","have lost","was losing"], correct:2, explanation:"Present perfect for a past action with a present result." },
-    { question:"They ___ in London since 2018.", options:["live","lived","are living","have lived"], correct:3, explanation:"'Since' requires present perfect: have lived." },
-    { question:"If it rains tomorrow, we ___ stay inside.", options:["will","would","shall","can"], correct:0, explanation:"First conditional: If + present simple, will + infinitive." },
-    { question:"He is ___ than his brother.", options:["tall","tallest","more tall","taller"], correct:3, explanation:"Comparative of short adjectives: add -er." },
-    { question:"I don't have ___ money left.", options:["some","any","no","much"], correct:1, explanation:"In negative sentences we use 'any', not 'some'." },
-    { question:"She asked me where I ___ from.", options:["come","came","am coming","have come"], correct:1, explanation:"Reported speech shifts present simple to past simple." },
-    { question:"The film ___ two hours ago.", options:["starts","started","has started","is starting"], correct:1, explanation:"'Ago' signals past simple tense." },
-    { question:"You should ___ more water every day.", options:["drink","to drink","drinking","drank"], correct:0, explanation:"Modal verbs (should) are followed by bare infinitive." },
-    { question:"___ the weather was bad, we enjoyed the trip.", options:["Although","Because","So","Since"], correct:0, explanation:"'Although' introduces a contrast clause." }
+    { question:"She ___ to work every day by bus.", options:["go","goes","going","gone"], correct:1, explanation:"3. Person Singular Present Simple: goes." },
+    { question:"I ___ my keys. Have you seen them?", options:["lose","lost","have lost","was losing"], correct:2, explanation:"Present Perfect für Vergangenheit mit Gegenwartsbezug." },
+    { question:"If it rains tomorrow, we ___ stay inside.", options:["will","would","shall","can"], correct:0, explanation:"1. Konditionalsatz: If + Present Simple, will + Infinitiv." },
+    { question:"You should ___ more water every day.", options:["drink","to drink","drinking","drank"], correct:0, explanation:"Nach Modalverben steht der Infinitiv ohne 'to'." },
+    { question:"___ the weather was bad, we enjoyed the trip.", options:["Although","Because","So","Since"], correct:0, explanation:"'Although' leitet einen Konzessivsatz ein (obwohl)." }
   ],
   B2: [
-    { question:"By the time she arrived, the meeting ___.", options:["ended","has ended","had ended","was ending"], correct:2, explanation:"Past perfect shows one past action completed before another." },
-    { question:"The bridge ___ in 1890.", options:["built","was built","has been built","were built"], correct:1, explanation:"Passive voice: was/were + past participle." },
-    { question:"I'd rather you ___ tell him yet.", options:["don't","didn't","won't","hadn't"], correct:1, explanation:"'Would rather' + subject takes past subjunctive (didn't)." },
-    { question:"She's used to ___ early every morning.", options:["get up","gets up","getting up","got up"], correct:2, explanation:"'Be used to' is followed by a gerund (-ing form)." },
-    { question:"He gave up ___ after 20 years.", options:["smoke","to smoke","smokes","smoking"], correct:3, explanation:"'Give up' is followed by a gerund (-ing form)." },
-    { question:"___ she studied hard, she failed the exam.", options:["Despite","Even though","However","In spite"], correct:1, explanation:"'Even though' + clause. 'Despite/In spite of' + noun/gerund." },
-    { question:"The company's profits have risen ___ 30% this year.", options:["with","of","by","to"], correct:2, explanation:"A rise 'by' an amount describes the degree of increase." },
-    { question:"No sooner ___ than it started raining.", options:["we left","we had left","had we left","did we leave"], correct:2, explanation:"Inversion after 'no sooner': had + subject + past participle." },
-    { question:"It's high time we ___ a decision.", options:["make","made","have made","will make"], correct:1, explanation:"'It's high time' + past subjunctive (made)." },
-    { question:"She ___ be angry — she's smiling.", options:["can't","mustn't","wouldn't","shouldn't"], correct:0, explanation:"Can't = deduction/impossibility in the present." }
+    { question:"By the time she arrived, the meeting ___.", options:["ended","has ended","had ended","was ending"], correct:2, explanation:"Past Perfect für eine Handlung, die vor einer anderen abgeschlossen war." },
+    { question:"The bridge ___ in 1890.", options:["built","was built","has been built","were built"], correct:1, explanation:"Passiv: was/were + Partizip II." },
+    { question:"I'd rather you ___ tell him yet.", options:["don't","didn't","won't","hadn't"], correct:1, explanation:"'Would rather' + Subjekt nimmt den Past Subjunctive." },
+    { question:"He gave up ___ after 20 years.", options:["smoke","to smoke","smokes","smoking"], correct:3, explanation:"'Give up' folgt ein Gerundium (-ing)." },
+    { question:"No sooner ___ than it started raining.", options:["we left","we had left","had we left","did we leave"], correct:2, explanation:"Nach 'no sooner' steht Inversion: had + Subjekt." }
   ],
   C1: [
-    { question:"The accused was acquitted ___ all charges.", options:["from","of","for","on"], correct:1, explanation:"'Acquitted of' is the correct collocation in legal English." },
-    { question:"Hardly ___ sat down when the phone rang.", options:["I had","had I","I have","have I"], correct:1, explanation:"Inversion after negative adverb 'hardly': had + subject." },
-    { question:"The report ___ further investigation into the matter.", options:["calls for","calls on","calls off","calls up"], correct:0, explanation:"'Call for' means to require or demand something." },
-    { question:"His behaviour was ___ to say the least.", options:["questionable","questioned","questioning","questionnaire"], correct:0, explanation:"'Questionable' (adjective) = doubtful, suspect." },
-    { question:"The news came as a bolt ___ the blue.", options:["from","out of","through","across"], correct:1, explanation:"'A bolt out of the blue' = something completely unexpected." },
-    { question:"She is known to have a ___ tongue — always very direct.", options:["sharp","blunt","rough","keen"], correct:1, explanation:"'Blunt' tongue = speaking in a direct, sometimes rude way." },
-    { question:"The proposal was met with ___ silence.", options:["deafening","loud","resounding","blaring"], correct:0, explanation:"'Deafening silence' is a fixed paradoxical expression (C1 idiom)." },
-    { question:"The new law ___ effect next January.", options:["takes","comes into","brings","enters"], correct:1, explanation:"'Come into effect' = to start being applied/enforced." },
-    { question:"He was ___ to accept the offer after much deliberation.", options:["persuaded","convinced","talked into","induced"], correct:2, explanation:"'Talk someone into doing sth' = persuade informally." },
-    { question:"The issue ___ on whether funding will be approved.", options:["hinges","relies","rests","leans"], correct:0, explanation:"'Hinge on' = to depend entirely on one critical factor." }
+    { question:"The accused was acquitted ___ all charges.", options:["from","of","for","on"], correct:1, explanation:"'Acquitted of' ist die korrekte Kollokation im Rechtsenglisch." },
+    { question:"Hardly ___ sat down when the phone rang.", options:["I had","had I","I have","have I"], correct:1, explanation:"Inversion nach negativem Adverb 'hardly': had + Subjekt." },
+    { question:"The report ___ further investigation.", options:["calls for","calls on","calls off","calls up"], correct:0, explanation:"'Call for' bedeutet fordern/verlangen." },
+    { question:"The proposal was met with ___ silence.", options:["deafening","loud","resounding","blaring"], correct:0, explanation:"'Deafening silence' ist ein fester C1-Ausdruck." },
+    { question:"The issue ___ on whether funding will be approved.", options:["hinges","relies","rests","leans"], correct:0, explanation:"'Hinge on' = von einem entscheidenden Faktor abhängen." }
   ],
   C2: [
-    { question:"The politician's speech was ___ with contradictions.", options:["replete","abundant","filled","crowded"], correct:0, explanation:"'Replete with' (formal) = full of, abundantly supplied with." },
-    { question:"Her ___ remarks offended several colleagues.", options:["acerbic","acidic","bitter","cutting"], correct:0, explanation:"'Acerbic' is the most precise C2 word for sharply critical/harsh." },
-    { question:"The distinction between 'may' and 'might' in formal writing ___.", options:["is a matter of style only","affects degree of probability","has become obsolete","is purely regional"], correct:1, explanation:"'May' implies higher probability; 'might' suggests more doubt." },
-    { question:"He was ___ in his refusal to compromise.", options:["intransigent","stubborn","firm","resolute"], correct:0, explanation:"'Intransigent' (C2) = refusing to change one's position, formal register." },
-    { question:"The policy had far-___ consequences for the economy.", options:["reaching","ranging","going","stretching"], correct:0, explanation:"'Far-reaching' is the fixed collocation meaning widespread impact." },
-    { question:"The author's prose is known for its ___.", options:["lucidity","lucidness","clearness","transparency"], correct:0, explanation:"'Lucidity' is the most precise formal noun for absolute clarity of expression." },
-    { question:"'To brook no opposition' means ___.", options:["to tolerate no disagreement","to encourage debate","to ignore criticism","to delay a decision"], correct:0, explanation:"'Brook' (C2 verb) = to tolerate. 'Brook no opposition' = allow none." },
-    { question:"Which word best completes: 'The scandal led to the ___ of the minister'?", options:["downfall","collapse","defeat","ruin"], correct:0, explanation:"'Downfall' specifically refers to loss of power/status due to a failure." },
-    { question:"'She has a ___ for detail' means she notices everything.", options:["penchant","eye","knack","flair"], correct:1, explanation:"'An eye for detail' is the fixed idiom; the others don't collocate here." },
-    { question:"The concept ___ to more than just linguistic competence.", options:["pertains","refers","relates","concerns"], correct:0, explanation:"'Pertain to' (formal/C2) = be appropriate or relevant to, often in academic writing." }
+    { question:"The politician's speech was ___ with contradictions.", options:["replete","abundant","filled","crowded"], correct:0, explanation:"'Replete with' (formal) = reich an, angefüllt mit." },
+    { question:"He was ___ in his refusal to compromise.", options:["intransigent","stubborn","firm","resolute"], correct:0, explanation:"'Intransigent' (C2) = kompromisslos, im formalen Register." },
+    { question:"'To brook no opposition' means ___.", options:["to tolerate no disagreement","to encourage debate","to ignore criticism","to delay a decision"], correct:0, explanation:"'Brook' (C2) = dulden. 'Brook no opposition' = keine Widerrede dulden." },
+    { question:"The author's prose is known for its ___.", options:["lucidity","lucidness","clearness","transparency"], correct:0, explanation:"'Lucidity' ist das präziseste formale Nomen für Klarheit des Ausdrucks." },
+    { question:"The concept ___ to more than just linguistic competence.", options:["pertains","refers","relates","concerns"], correct:0, explanation:"'Pertain to' (formal/C2) = betreffen, relevant sein für." }
   ]
 };
 
-function fetchTestLevel(level) {
-  const bank = [...TEST_BANK[level]];
-  for (let i = bank.length - 1; i > 0; i--) {
+function _shuffleArr(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [bank[i], bank[j]] = [bank[j], bank[i]];
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return bank.slice(0, 5).map(q => ({ ...q, level }));
+  return a;
 }
 
-function startPlacementTest() {
+async function startPlacementTest() {
+  if (!getApiKey()) { showToast('Bitte zuerst API Key im Start-Tab eingeben'); return; }
   testQuestions = [];
   testIdx = 0;
-  testScores = { B1: 0, B2: 0, C1: 0, C2: 0 };
-  testQuestions = ['B1','B2','C1','C2'].flatMap(lvl => fetchTestLevel(lvl));
+  testScores = Object.fromEntries(TEST_LEVELS.map(l => [l, 0]));
+
+  document.getElementById('testQuestionCard').style.display = 'none';
+  document.getElementById('testResultCard').style.display = 'none';
+  document.getElementById('testLoadingCard').style.display = 'flex';
+
+  const seed = Math.floor(Math.random() * 99999);
+  const prompt = `Create a CEFR English placement test with exactly 3 multiple-choice questions per level (A1, A2, B1, B2, C1, C2) = 18 questions total. Vary grammar, vocabulary and idioms. Use seed ${seed} for variety.
+Return ONLY a valid JSON array (no markdown):
+[{"level":"A1","question":"___ is your name?","options":["What","Who","Where","How"],"correct":0,"explanation":"Kurze Erklärung auf Deutsch."},...]`;
+
+  try {
+    const raw = await callAI([{ role: 'user', content: prompt }], 3000);
+    const parsed = JSON.parse(extractJSON(raw, 'array'));
+    if (Array.isArray(parsed) && parsed.length >= 12) {
+      testQuestions = parsed.map(q => ({ ...q, level: q.level?.toUpperCase() || 'B1' }));
+    } else {
+      throw new Error('Zu wenige Fragen');
+    }
+  } catch(e) {
+    // Fallback: use shuffled static bank
+    testQuestions = TEST_LEVELS.flatMap(lvl =>
+      _shuffleArr(TEST_BANK_FALLBACK[lvl]).slice(0, 3).map(q => ({ ...q, level: lvl }))
+    );
+  }
+
   document.getElementById('testLoadingCard').style.display = 'none';
   showTestQuestion();
 }
@@ -3719,7 +3742,7 @@ function showTestQuestion() {
   document.getElementById('testQuestionCard').style.display = 'flex';
   document.getElementById('testLevelBadge').textContent = q.level;
   document.getElementById('testCounter').textContent = `${testIdx + 1} / ${total}`;
-  document.getElementById('testProgress').style.width = `${((testIdx) / total) * 100}%`;
+  document.getElementById('testProgress').style.width = `${(testIdx / total) * 100}%`;
   document.getElementById('testQuestion').textContent = q.question;
   document.getElementById('testExplanation').style.display = 'none';
   document.getElementById('testNextBtn').style.display = 'none';
@@ -3730,29 +3753,19 @@ function showTestQuestion() {
   ).join('');
 }
 
-async function answerTest(chosen) {
+function answerTest(chosen) {
   const q = testQuestions[testIdx];
   const btns = Array.from(document.querySelectorAll('#testOptions .test-opt'));
   btns.forEach(b => b.disabled = true);
   btns[chosen].classList.add(chosen === q.correct ? 'correct' : 'wrong');
   if (chosen !== q.correct) btns[q.correct].classList.add('correct');
-
   if (chosen === q.correct) testScores[q.level] = (testScores[q.level] || 0) + 1;
-  const isCorrect = chosen === q.correct;
 
   const expDiv = document.getElementById('testExplanation');
-  expDiv.innerHTML = `<strong>${isCorrect ? '✅ Richtig!' : '❌ Falsch.'}</strong>${!isCorrect ? ` Richtige Antwort: <em>${q.options[q.correct]}</em>` : ''}<br><br>${q.explanation || ''}`;
+  const isCorrect = chosen === q.correct;
+  expDiv.innerHTML = `<strong>${isCorrect ? '✅ Richtig!' : '❌ Falsch.'}</strong>${!isCorrect ? ` Richtige Antwort: <em>${escHtml(q.options[q.correct])}</em>` : ''}<br><br>${escHtml(q.explanation || '')}`;
   expDiv.style.display = 'block';
   document.getElementById('testNextBtn').style.display = 'block';
-
-  // AI detailed explanation in background
-  try {
-    const detail = await callAI([{role:'user',content:
-      `English grammar question: "${q.question}"
-Correct answer: "${q.options[q.correct]}"
-Brief explanation in German (2-3 sentences), include a grammar rule and a second example sentence:`}], 150);
-    expDiv.innerHTML = `<strong>${isCorrect ? '✅ Richtig!' : '❌ Falsch.'}</strong>${!isCorrect ? ` Richtige Antwort: <em>${q.options[q.correct]}</em>` : ''}<br><br>${detail.trim()}`;
-  } catch(_) {}
 }
 
 function testNext() {
@@ -3766,41 +3779,37 @@ function testNext() {
 
 function showTestResult() {
   document.getElementById('testQuestionCard').style.display = 'none';
-  const counts = {};
-  testQuestions.forEach(q => counts[q.level] = (counts[q.level] || 0) + 1);
 
-  // Determine level: highest where score >= 60%
-  const levels = ['B1', 'B2', 'C1', 'C2'];
-  let result = 'B1';
-  for (const lvl of levels) {
-    const total = counts[lvl] || 5;
-    const score = testScores[lvl] || 0;
-    if (score / total >= 0.6) result = lvl;
+  // Count questions per level
+  const counts = Object.fromEntries(TEST_LEVELS.map(l => [l, 0]));
+  testQuestions.forEach(q => { if (counts[q.level] !== undefined) counts[q.level]++; });
+
+  // Highest level with >= 60% correct; if nothing passes, A1
+  let result = 'A1';
+  for (const lvl of TEST_LEVELS) {
+    const total = counts[lvl] || 1;
+    if ((testScores[lvl] || 0) / total >= 0.6) result = lvl;
   }
 
   document.getElementById('testResultLevel').textContent = result;
-  document.getElementById('testResultDesc').textContent = levelDescs[result];
+  document.getElementById('testResultDesc').textContent = levelDescs[result] || '';
 
-  // Level bars
-  const barsHtml = levels.map(lvl => {
-    const total = counts[lvl] || 5;
+  const barsHtml = TEST_LEVELS.map(lvl => {
+    const total = counts[lvl] || 0;
+    if (total === 0) return '';
     const score = testScores[lvl] || 0;
     const pct = Math.round((score / total) * 100);
     const pass = pct >= 60;
     return `<div class="level-bar-row">
       <span class="level-bar-label">${lvl}</span>
-      <div class="level-bar-wrap">
-        <div class="level-bar-fill${pass ? ' pass' : ''}" style="width:${pct}%"></div>
-      </div>
+      <div class="level-bar-wrap"><div class="level-bar-fill${pass ? ' pass' : ''}" style="width:${pct}%"></div></div>
       <span style="font-size:12px;color:var(--text-muted);width:44px;text-align:right">${score}/${total}</span>
     </div>`;
   }).join('');
   document.getElementById('testLevelBars').innerHTML = barsHtml;
 
-  const total = testQuestions.length;
   const totalCorrect = Object.values(testScores).reduce((a, b) => a + b, 0);
-  document.getElementById('testTotalScore').textContent = `Gesamt: ${totalCorrect} von ${total} richtig`;
-
+  document.getElementById('testTotalScore').textContent = `Gesamt: ${totalCorrect} von ${testQuestions.length} richtig`;
   document.getElementById('testResultCard').style.display = 'flex';
 }
 
